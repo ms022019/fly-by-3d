@@ -1,0 +1,7 @@
+stable-baselines3>=2.7.0
+gymnasium>=0.29
+godot-rl>=0.4.7
+onnxruntime>=1.17
+pillow
+# torch 2.13 の ONNX エクスポータが依存する
+onnxscript>=0.7

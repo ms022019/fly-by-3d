@@ -1,0 +1,79 @@
+No game binary has been provided, please press PLAY in the Godot editor
+waiting for remote GODOT connection on port 11008
+connection established
+action space [{'move': {'size': 2, 'action_type': 'continuous'}}, {'move': {'size': 2, 'action_type': 'continuous'}}, {'move': {'size': 2, 'action_type': 'continuous'}}, {'move': {'size': 2, 'action_type': 'continuous'}}, {'move': {'size': 2, 'action_type': 'continuous'}}, {'move': {'size': 2, 'action_type': 'continuous'}}, {'move': {'size': 2, 'action_type': 'continuous'}}, {'move': {'size': 2, 'action_type': 'continuous'}}, {'move': {'size': 2, 'action_type': 'continuous'}}, {'move': {'size': 2, 'action_type': 'continuous'}}, {'move': {'size': 2, 'action_type': 'continuous'}}, {'move': {'size': 2, 'action_type': 'continuous'}}, {'move': {'size': 2, 'action_type': 'continuous'}}, {'move': {'size': 2, 'action_type': 'continuous'}}, {'move': {'size': 2, 'action_type': 'continuous'}}, {'move': {'size': 2, 'action_type': 'continuous'}}]
+observation space [{'obs': {'size': [12], 'space': 'box'}}, {'obs': {'size': [12], 'space': 'box'}}, {'obs': {'size': [12], 'space': 'box'}}, {'obs': {'size': [12], 'space': 'box'}}, {'obs': {'size': [12], 'space': 'box'}}, {'obs': {'size': [12], 'space': 'box'}}, {'obs': {'size': [12], 'space': 'box'}}, {'obs': {'size': [12], 'space': 'box'}}, {'obs': {'size': [12], 'space': 'box'}}, {'obs': {'size': [12], 'space': 'box'}}, {'obs': {'size': [12], 'space': 'box'}}, {'obs': {'size': [12], 'space': 'box'}}, {'obs': {'size': [12], 'space': 'box'}}, {'obs': {'size': [12], 'space': 'box'}}, {'obs': {'size': [12], 'space': 'box'}}, {'obs': {'size': [12], 'space': 'box'}}]
+No game binary has been provided, please press PLAY in the Godot editor
+waiting for remote GODOT connection on port 11009
+connection established
+action space [{'move': {'size': 2, 'action_type': 'continuous'}}, {'move': {'size': 2, 'action_type': 'continuous'}}, {'move': {'size': 2, 'action_type': 'continuous'}}, {'move': {'size': 2, 'action_type': 'continuous'}}, {'move': {'size': 2, 'action_type': 'continuous'}}, {'move': {'size': 2, 'action_type': 'continuous'}}, {'move': {'size': 2, 'action_type': 'continuous'}}, {'move': {'size': 2, 'action_type': 'continuous'}}, {'move': {'size': 2, 'action_type': 'continuous'}}, {'move': {'size': 2, 'action_type': 'continuous'}}, {'move': {'size': 2, 'action_type': 'continuous'}}, {'move': {'size': 2, 'action_type': 'continuous'}}, {'move': {'size': 2, 'action_type': 'continuous'}}, {'move': {'size': 2, 'action_type': 'continuous'}}, {'move': {'size': 2, 'action_type': 'continuous'}}, {'move': {'size': 2, 'action_type': 'continuous'}}]
+observation space [{'obs': {'size': [12], 'space': 'box'}}, {'obs': {'size': [12], 'space': 'box'}}, {'obs': {'size': [12], 'space': 'box'}}, {'obs': {'size': [12], 'space': 'box'}}, {'obs': {'size': [12], 'space': 'box'}}, {'obs': {'size': [12], 'space': 'box'}}, {'obs': {'size': [12], 'space': 'box'}}, {'obs': {'size': [12], 'space': 'box'}}, {'obs': {'size': [12], 'space': 'box'}}, {'obs': {'size': [12], 'space': 'box'}}, {'obs': {'size': [12], 'space': 'box'}}, {'obs': {'size': [12], 'space': 'box'}}, {'obs': {'size': [12], 'space': 'box'}}, {'obs': {'size': [12], 'space': 'box'}}, {'obs': {'size': [12], 'space': 'box'}}, {'obs': {'size': [12], 'space': 'box'}}]
+No game binary has been provided, please press PLAY in the Godot editor
+waiting for remote GODOT connection on port 11010
+connection established
+action space [{'move': {'size': 2, 'action_type': 'continuous'}}, {'move': {'size': 2, 'action_type': 'continuous'}}, {'move': {'size': 2, 'action_type': 'continuous'}}, {'move': {'size': 2, 'action_type': 'continuous'}}, {'move': {'size': 2, 'action_type': 'continuous'}}, {'move': {'size': 2, 'action_type': 'continuous'}}, {'move': {'size': 2, 'action_type': 'continuous'}}, {'move': {'size': 2, 'action_type': 'continuous'}}, {'move': {'size': 2, 'action_type': 'continuous'}}, {'move': {'size': 2, 'action_type': 'continuous'}}, {'move': {'size': 2, 'action_type': 'continuous'}}, {'move': {'size': 2, 'action_type': 'continuous'}}, {'move': {'size': 2, 'action_type': 'continuous'}}, {'move': {'size': 2, 'action_type': 'continuous'}}, {'move': {'size': 2, 'action_type': 'continuous'}}, {'move': {'size': 2, 'action_type': 'continuous'}}]
+observation space [{'obs': {'size': [12], 'space': 'box'}}, {'obs': {'size': [12], 'space': 'box'}}, {'obs': {'size': [12], 'space': 'box'}}, {'obs': {'size': [12], 'space': 'box'}}, {'obs': {'size': [12], 'space': 'box'}}, {'obs': {'size': [12], 'space': 'box'}}, {'obs': {'size': [12], 'space': 'box'}}, {'obs': {'size': [12], 'space': 'box'}}, {'obs': {'size': [12], 'space': 'box'}}, {'obs': {'size': [12], 'space': 'box'}}, {'obs': {'size': [12], 'space': 'box'}}, {'obs': {'size': [12], 'space': 'box'}}, {'obs': {'size': [12], 'space': 'box'}}, {'obs': {'size': [12], 'space': 'box'}}, {'obs': {'size': [12], 'space': 'box'}}, {'obs': {'size': [12], 'space': 'box'}}]
+agents = 48  (arenas 16 x processes 3)
+observation space: Dict('obs': Box(-1.0, 1.0, (12,), float32))
+action space:      Box(-1.0, 1.0, (2,), float32)
+[  10,032 steps]  targets/episode   0.17  reward    0.17  episodes    48    2824 steps/s    0.1 min
+[  20,016 steps]  targets/episode   0.17  reward    0.17  episodes    48    2891 steps/s    0.1 min
+[  30,000 steps]  targets/episode   5.79  reward    5.68  episodes    96    2902 steps/s    0.2 min
+[  40,032 steps]  targets/episode   5.79  reward    5.68  episodes    96    2768 steps/s    0.2 min
+[  50,016 steps]  targets/episode  21.89  reward   23.13  episodes   144    2720 steps/s    0.3 min
+[  60,000 steps]  targets/episode  21.89  reward   23.13  episodes   144    2728 steps/s    0.4 min
+[  70,032 steps]  targets/episode  40.41  reward   43.99  episodes   192    2693 steps/s    0.4 min
+[  80,016 steps]  targets/episode  40.41  reward   43.99  episodes   192    2685 steps/s    0.5 min
+[  90,000 steps]  targets/episode  50.54  reward   55.34  episodes   240    2659 steps/s    0.6 min
+[ 100,032 steps]  targets/episode  50.54  reward   55.34  episodes   240    2681 steps/s    0.6 min
+[ 110,016 steps]  targets/episode  54.68  reward   59.96  episodes   288    2714 steps/s    0.7 min
+[ 120,000 steps]  targets/episode  54.68  reward   59.96  episodes   288    2687 steps/s    0.7 min
+[ 130,032 steps]  targets/episode  58.04  reward   63.63  episodes   336    2705 steps/s    0.8 min
+[ 140,016 steps]  targets/episode  58.04  reward   63.63  episodes   336    2734 steps/s    0.9 min
+[ 150,000 steps]  targets/episode  58.04  reward   63.63  episodes   336    2728 steps/s    0.9 min
+[ 160,032 steps]  targets/episode  60.71  reward   66.55  episodes   384    2718 steps/s    1.0 min
+[ 170,016 steps]  targets/episode  60.71  reward   66.55  episodes   384    2739 steps/s    1.0 min
+[ 180,000 steps]  targets/episode  62.29  reward   68.17  episodes   432    2734 steps/s    1.1 min
+[ 190,032 steps]  targets/episode  62.29  reward   68.17  episodes   432    2752 steps/s    1.2 min
+[ 200,016 steps]  targets/episode  62.35  reward   68.24  episodes   480    2720 steps/s    1.2 min
+[ 202,752 steps]  targets/episode  62.35  reward   68.24  episodes   480    2717 steps/s    1.2 min
+/usr/local/python/3.11.16/lib/python3.11/site-packages/godot_rl/wrappers/onnx/stable_baselines_export.py:58: UserWarning: Exporting a model while it is in training mode. Please ensure that this is intended, as it may lead to different behavior during inference. Calling model.eval() before export is recommended.
+  torch.onnx.export(
+/usr/local/python/3.11.16/lib/python3.11/site-packages/godot_rl/wrappers/onnx/stable_baselines_export.py:58: UserWarning: # 'dynamic_axes' is not recommended when dynamo=True, and may lead to 'torch._dynamo.exc.UserError: Constraints violated.' Supply the 'dynamic_shapes' argument instead if export is unsuccessful.
+  torch.onnx.export(
+W0818 13:00:31.268000 38344 site-packages/torch/onnx/_internal/exporter/_compat.py:133] Setting ONNX exporter to use operator set version 18 because the requested opset_version 9 is a lower version than we have implementations for. Automatic version conversion will be performed, which may not be successful at converting to the requested version. If version conversion is unsuccessful, the opset version of the exported model will be kept at 18. Please consider setting opset_version >=18 to leverage latest ONNX features
+W0818 13:00:32.044000 38344 site-packages/torch/onnx/_internal/exporter/_registration.py:107] torchvision is not installed. Skipping torchvision::nms
+W0818 13:00:32.046000 38344 site-packages/torch/onnx/_internal/exporter/_registration.py:107] torchvision is not installed. Skipping torchvision::roi_align
+W0818 13:00:32.047000 38344 site-packages/torch/onnx/_internal/exporter/_registration.py:107] torchvision is not installed. Skipping torchvision::roi_pool
+W0818 13:00:32.048000 38344 site-packages/torch/onnx/_internal/exporter/_registration.py:107] torchvision is not installed. Skipping torchvision::deform_conv2d
+/usr/local/python/3.11.16/lib/python3.11/copyreg.py:105: FutureWarning: `isinstance(treespec, LeafSpec)` is deprecated, use `isinstance(treespec, TreeSpec) and treespec.is_leaf()` instead.
+  return cls.__new__(cls, *args)
+The model version conversion is not supported by the onnxscript version converter and fallback is enabled. The model will be converted using the onnx C API (target version: 9).
+Failed to convert the model to the target version 9 using the ONNX C API. The model was not modified
+Traceback (most recent call last):
+  File "/usr/local/python/3.11.16/lib/python3.11/site-packages/onnxscript/version_converter/__init__.py", line 137, in call
+    converted_proto = _c_api_utils.call_onnx_api(
+                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/python/3.11.16/lib/python3.11/site-packages/onnxscript/version_converter/_c_api_utils.py", line 65, in call_onnx_api
+    result = func(proto)
+             ^^^^^^^^^^^
+  File "/usr/local/python/3.11.16/lib/python3.11/site-packages/onnxscript/version_converter/__init__.py", line 132, in _partial_convert_version
+    return onnx.version_converter.convert_version(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/python/3.11.16/lib/python3.11/site-packages/onnx/version_converter.py", line 39, in convert_version
+    converted_model_str = C.convert_version(model_str, target_version)
+                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+RuntimeError: /project/onnx/version_converter/BaseConverter.h:67: adapter_lookup: Assertion `false` failed: No Adapter From Version $16 for Identity
+saved /home/vscode/.claude/jobs/c77094ae/tmp/curve_model.zip
+[torch.onnx] Obtain model graph for `OnnxableMultiInputPolicy([...]` with `torch.export.export(..., strict=False)`...
+[torch.onnx] Obtain model graph for `OnnxableMultiInputPolicy([...]` with `torch.export.export(..., strict=False)`... ✅
+[torch.onnx] Run decompositions...
+[torch.onnx] Run decompositions... ✅
+[torch.onnx] Translate the graph into ONNX...
+[torch.onnx] Translate the graph into ONNX... ✅
+[torch.onnx] Optimize the ONNX graph...
+[torch.onnx] Optimize the ONNX graph... ✅
+saved /home/vscode/.claude/jobs/c77094ae/tmp/curve_model.onnx
+close message sent
+close message sent
+close message sent

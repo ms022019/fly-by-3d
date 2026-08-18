@@ -1,0 +1,42 @@
+[gd_scene load_steps=7 format=3]
+
+[ext_resource type="Script" path="res://scripts/player.gd" id="1"]
+[ext_resource type="Script" path="res://scripts/ball_ai_controller.gd" id="2"]
+
+[sub_resource type="PhysicsMaterial" id="PhysicsMaterial_1"]
+friction = 1.0
+rough = true
+bounce = 0.05
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_1"]
+albedo_color = Color(0.29, 0.68, 1, 1)
+metallic = 0.35
+roughness = 0.3
+
+[sub_resource type="SphereMesh" id="SphereMesh_1"]
+material = SubResource("StandardMaterial3D_1")
+radius = 1.0
+height = 2.0
+radial_segments = 24
+rings = 12
+
+[sub_resource type="SphereShape3D" id="SphereShape3D_1"]
+radius = 1.0
+
+[node name="Player" type="RigidBody3D"]
+mass = 1.0
+physics_material_override = SubResource("PhysicsMaterial_1")
+continuous_cd = true
+linear_damp = 0.8
+angular_damp = 0.2
+script = ExtResource("1")
+
+[node name="Mesh" type="MeshInstance3D" parent="."]
+mesh = SubResource("SphereMesh_1")
+
+[node name="Collision" type="CollisionShape3D" parent="."]
+shape = SubResource("SphereShape3D_1")
+
+[node name="AIController" type="Node3D" parent="."]
+script = ExtResource("2")
+reset_after = 3600

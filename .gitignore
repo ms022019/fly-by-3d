@@ -1,0 +1,15 @@
+# Godot のインポートキャッシュ (再生成される)
+game/.godot/
+
+# エクスポート成果物 (Web 43MB / Windows 94MB)
+build/
+
+# 学習ログ
+logs/
+
+# Python
+__pycache__/
+
+# Claude Code のローカル設定 / 作業ツリー
+.claude/settings.local.json
+.claude/worktrees/
