@@ -11,10 +11,15 @@ class_name TouchUi
 ## 出力は画面基準のまま (x = 右が正、y = 下が正) で渡す。
 ## ゲームごとの意味づけ (機首上げなのか、奥へ転がすのか) は使う側で行う。
 
-## スティックの可動半径 (px)
-const RADIUS := 120.0
+## スティックの可動半径 (px)。
+## キーボードは押した瞬間に入力が全開になるので、ここを大きく取ると
+## タッチだけが不利になる。指を軽く動かせば全開に届く値にしてある。
+const RADIUS := 72.0
 ## この距離までは入力なし扱い。指の微妙なブレを拾わないため
-const DEAD_ZONE := 14.0
+const DEAD_ZONE := 8.0
+## 傾きの応答カーブ。1.0 より小さいほど、少し傾けただけでよく効く。
+## 細かい修正舵を当てやすくするために入れている。
+const RESPONSE := 0.65
 
 ## スティックの傾き。x = 右が正、y = 下が正、長さは 0〜1
 var stick := Vector2.ZERO
@@ -64,7 +69,8 @@ func _update() -> void:
 		offset = (_point - _origin).limit_length(RADIUS)
 		if offset.length() < DEAD_ZONE:
 			offset = Vector2.ZERO
-	stick = offset / RADIUS
+	var amount := offset.length() / RADIUS
+	stick = Vector2.ZERO if amount <= 0.0 else offset.normalized() * pow(amount, RESPONSE)
 	brake = _brake_index >= 0
 	queue_redraw()
 
@@ -72,7 +78,8 @@ func _update() -> void:
 func _draw() -> void:
 	if _stick_index >= 0:
 		draw_arc(_origin, RADIUS, 0.0, TAU, 48, Color(1.0, 1.0, 1.0, 0.16), 3.0, true)
-		draw_circle(_origin + stick * RADIUS, 34.0, Color(1.0, 0.62, 0.25, 0.55))
+		var knob := (_point - _origin).limit_length(RADIUS)
+		draw_circle(_origin + knob, 34.0, Color(1.0, 0.62, 0.25, 0.55))
 	else:
 		# 触れていないときは、置き場所のヒントだけ薄く出す
 		var hint := Vector2(RADIUS + 40.0, size.y - RADIUS - 40.0)
