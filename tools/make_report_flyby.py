@@ -60,6 +60,7 @@ ROOT = Path(__file__).resolve().parent.parent
 OUT = ROOT / "docs" / "FlyBy3D_report_ja.pdf"
 SHOT = ROOT / "docs" / "assets" / "flyby_screenshot.png"
 SHOT_PASS = ROOT / "docs" / "assets" / "flyby_pass.png"
+SHOT_VS = ROOT / "docs" / "assets" / "flyby_vs.png"
 
 BLUE = colors.HexColor("#4A7FC1")
 BLUE_D = colors.HexColor("#1D3F73")
@@ -260,6 +261,86 @@ def branch_figure() -> Drawing:
     return d
 
 
+def embed_figure() -> Drawing:
+    """学習した方策をゲームの中で動かすまでの流れ。"""
+    w, h = CONTENT_W, 132
+    d = Drawing(w, h)
+    bw = (w - 30) / 4
+    steps = [
+        ("1  学習する", ["Python + PPO", "60 万ステップ", "3.4 分"], colors.HexColor("#FDF0F2")),
+        ("2  重みを取り出す", ["5,507 個の float32", "base64 で 31 KB", "export_policy.py"], PANEL),
+        ("3  埋め込む", ["GDScript の定数に", "する。画像や外部", "ファイルは無し"], PANEL),
+        ("4  ゲーム内で推論", ["行列積を回すだけ", "Python もサーバーも", "要らない"], colors.HexColor("#EFF3FB")),
+    ]
+    for i, (title, lines, fill) in enumerate(steps):
+        x = i * (bw + 10)
+        box(d, x, 30, bw, 88, fill, LINE)
+        txt(d, x + 10, 100, title, 8.6, PINK if i == 3 else INK, bold=True)
+        for j, line in enumerate(lines):
+            txt(d, x + 10, 82 - j * 13, line, 7.4, MUTED)
+        if i < 3:
+            arrow(d, x + bw + 1, 74, x + bw + 8, 74, INK, 1.2)
+
+    txt(
+        d,
+        w / 2,
+        12,
+        "ONNX ランタイムは使わない (プラグインの推論部は C# 実装で、この環境の Godot では動かない)",
+        7.6,
+        MUTED,
+        "middle",
+    )
+    return d
+
+
+def ghost_figure() -> Drawing:
+    """ゴースト対戦の見え方。2 機は同じ経路を飛ぶ。"""
+    w, h = CONTENT_W, 152
+    d = Drawing(w, h)
+
+    # コースの経路 (ゆるい S 字)
+    pts = [(30, 52), (110, 86), (190, 62), (270, 96), (350, 70), (430, 104), (480, 84)]
+    flat: list[float] = []
+    for x, y in pts:
+        flat += [x, y]
+    d.add(PolyLine(flat, strokeColor=colors.HexColor("#C6D6EE"), strokeWidth=1.4))
+
+    # リング
+    for x, y in pts[1:-1]:
+        d.add(Ellipse(x, y, 5, 13, fillColor=None, strokeColor=BLUE, strokeWidth=1.8))
+    d.add(Ellipse(pts[3][0], pts[3][1], 6, 15, fillColor=None, strokeColor=GOLD, strokeWidth=2.4))
+
+    def craft(x, y, color, label, below):
+        d.add(
+            PolyLine(
+                [x - 11, y - 8, x + 12, y, x - 11, y + 8, x - 11, y - 8],
+                strokeColor=color,
+                strokeWidth=2.0,
+            )
+        )
+        txt(d, x, y - 22 if below else y + 16, label, 8, color, "middle", bold=True)
+
+    craft(pts[1][0] + 12, pts[1][1] - 6, colors.HexColor("#E2761B"), "あなた", True)
+    craft(pts[4][0] + 6, pts[4][1] - 4, BLUE_D, "相手 (ゴースト)", False)
+
+    # 差
+    d.add(Line(pts[1][0] + 12, 128, pts[4][0] + 6, 128, strokeColor=MUTED, strokeWidth=0.8))
+    for x in [pts[1][0] + 12, pts[4][0] + 6]:
+        d.add(Line(x, 124, x, 132, strokeColor=MUTED, strokeWidth=0.8))
+    txt(d, (pts[1][0] + pts[4][0]) / 2, 134, "経路上の差 = HUD の「+2 gates / 1.4s」", 7.8, INK, "middle")
+
+    txt(d, 30, 26, "実際にはまったく同じ形のコースが 2 本、同じ座標に重なっている", 8, INK, bold=True)
+    txt(
+        d,
+        30,
+        12,
+        "乱数シードを揃えて形を一致させ、当たり判定はレイヤーで分離する。相手のリングと地面は描かない。",
+        7.6,
+        MUTED,
+    )
+    return d
+
+
 def curve_figure() -> Drawing:
     """段階 1 と段階 2 の実測学習カーブ。"""
     w, h = CONTENT_W, 212
@@ -370,8 +451,9 @@ def story() -> list:
     f.append(gap(7))
     f.append(
         p(
-            "前作 Ball Collector 3D (球を転がして的を集めるゲーム) の骨組みを流用して作った 2 本目。"
-            "同じリポジトリに両方が入っていて、起動時の引数だけで切り替わる。",
+            "前作 Ball Collector 3D (球を転がして的を集めるゲーム) の骨組みを流用した 2 本目。"
+            "両方が同じリポジトリに入っていて、起動時の引数だけで切り替わる。"
+            "学習した AI はゲームに埋め込んであり、ブラウザを開けばそのまま対戦できる (7 章)。",
             "small",
         )
     )
@@ -396,6 +478,7 @@ def story() -> list:
                 ["ルール", "60 秒タイムアタック。リングをくぐると +1 点"],
                 ["コース", "リングは常に 6 個先まで見える。くぐった端から前方へ置き直して使い回す"],
                 ["操作", "W / S で機首上下、A / D で左右旋回、Shift でブレーキ"],
+                ["対戦", "SPACE で開始、1〜4 で AI の強さ、M で VS / SOLO の切り替え"],
                 ["速度", "8 〜 18 m/s。既定は全開で、Shift を押している間だけ減速する"],
                 ["失敗", "地面に激突するかコース外へ出るとコースが作り直され、スタートに戻る"],
                 ["カメラ", "機体を後方から追う。機首の向きに合わせて回る"],
@@ -916,7 +999,164 @@ def story() -> list:
     f.append(PageBreak())
 
     # ---------------------------------------------------------------- 7
-    f.append(heading("7", "つまずいた点と、どう回避したか"))
+    f.append(heading("7", "学習した AI と、その場で対戦する"))
+    f.append(gap(9))
+    f.append(
+        p(
+            "学習して数字が上がったことを確認するだけでは、"
+            "その AI がどれくらい強いのかは体感できない。"
+            "そこで<b>学習済みの方策をゲームの中に入れて、人間と競走させられる</b>ようにした。"
+            "ブラウザでページを開くだけで、AI が隣を飛んでいる。"
+            "Python もサーバーも動いていない。"
+        )
+    )
+    f.append(gap(11))
+    f.append(embed_figure())
+    f.append(gap(5))
+    f.append(
+        p(
+            "学習した重みをゲームに持ち込むまでの流れ。方策は小さいので、まるごと埋め込めてしまう。",
+            "caption",
+        )
+    )
+    f.append(gap(13))
+
+    f.append(sub("7-1  なぜゲームの中で推論できるのか"))
+    f.append(gap(6))
+    f.append(
+        p(
+            "普通この手のことをするには ONNX ランタイムを使うが、"
+            "godot-rl 同梱の推論部は C# 実装で、この環境の Godot (非 .NET ビルド) では動かない。"
+            "行き詰まりに見えるが、そもそも<b>この方策は 17 → 64 → 64 → 3 の MLP でしかない</b>。"
+            "重みは 5,507 個、base64 にして 31 KB。"
+            "それなら重みを GDScript の定数として埋め込み、"
+            "行列積を 3 回まわす方が話が早い (実装は 120 行ほど)。"
+        )
+    )
+    f.append(gap(9))
+    f.append(
+        callout(
+            "移植が正しいかをどう確かめたか",
+            "「だいたい動いているように見える」で済ませると、"
+            "重みの並び順や活性化関数を間違えていても気づけない。"
+            "そこで <b>Python と Godot に同じ観測を入れて、出力を突き合わせた</b>。"
+            "比較するのはクリップ前の生の値にする。[-1, 1] に丸めた後だと、"
+            "飽和して差が隠れてしまうため。<br/>"
+            "結果は Fly By が完全一致、Ball Collector は float32 の丸め誤差のみ。"
+            "さらにゲーム内 AI を 8 レース走らせたスコアも 39.25 個で、"
+            "Python 推論の 39.6 個と一致した。",
+        )
+    )
+
+    f.append(PageBreak())
+
+    f.append(sub("7-2  どうやって競走させるか"))
+    f.append(gap(6))
+    f.append(
+        p(
+            "前作 Ball Collector の対戦は「同じフィールドでターゲットを取り合う」形だった。"
+            "ところが Fly By はリングを順番にくぐる競技なので、この手が使えない。"
+            "ゲートを共有すると、<b>AI が先行した瞬間に人間の目標ゲートまで前へ送られてしまい</b>、"
+            "離されたら 1 個もくぐれなくなる。"
+        )
+    )
+    f.append(gap(6))
+    f.append(
+        p(
+            "そこで<b>ゴースト方式</b>にした。まったく同じ形のコースを 2 本、同じ座標に重ねて置く。"
+            "乱数シードを揃えるので形は完全に一致し、当たり判定はレイヤーで分けてあるので"
+            "互いのリングには反応しない。相手のリングと地面は描かないため、"
+            "画面上はコースが 1 本あるように見え、そこを相手が一緒に飛んでいるように見える。"
+        )
+    )
+    f.append(gap(11))
+    f.append(ghost_figure())
+    f.append(gap(9))
+    if SHOT_VS.exists():
+        f.append(Image(str(SHOT_VS), width=CONTENT_W, height=CONTENT_W * 648 / 1152))
+        f.append(gap(5))
+        f.append(
+            p(
+                "実際の対戦画面。青いのが AI (FULL POWER)。2 ゲート、約 4 秒離されている。"
+                "地面のにじみは対地マーカーで、機体からの距離が高度を表す。",
+                "caption",
+            )
+        )
+    f.append(gap(11))
+    f.append(
+        callout(
+            "この方式で捨てたもの",
+            "2 機は当たり判定を分けているので、<b>体当たりで妨害することはできない</b>。"
+            "純粋なタイムアタック対決になる。"
+            "同じ経路を飛ぶ以上ぶつかり続けて事故だらけになるため、意図的にそうした。"
+            "その代わり、離されても自分のペースで自分のリングをくぐり続けられる。",
+        )
+    )
+
+    f.append(PageBreak())
+
+    f.append(sub("7-3  AI の強さをどう絞るか"))
+    f.append(gap(6))
+    f.append(
+        p(
+            "全力の AI は 60 秒で約 40 個くぐる。手加減の段階が要る。"
+            "ここで大事なのは <b>ニューラルネットには一切触らない</b>こと。"
+            "弱いモデルを別に学習させるのではなく、"
+            "同じ方策の外側にあるパラメータだけを絞って強さを変えている。"
+        )
+    )
+    f.append(gap(9))
+    f.append(
+        callout(
+            "前作のやり方がそのままでは効かなかった",
+            "Ball Collector では「トルクと速度上限を skill 倍」するだけで 4 段階が作れた。"
+            "ところが Fly By で同じことをすると<b>弱くならない</b>。"
+            "この機体は旋回の角速度が速度によらず一定なので、"
+            "遅くすると小回りが利いて、むしろカーブを曲がりきれるようになってしまう。"
+            "実際、手書きの方策でも「全開のまま 33.0 個」より"
+            "「カーブ手前で減速して 34.4 個」の方が上だった。<br/>"
+            "そこで<b>速度上限で到達可能な上限を決め、行動ノイズで狙いを外させる</b>、"
+            "という 2 つの軸に分けた。速度は「どこまで行けるか」を、"
+            "ノイズは「どれくらい正確か」を担当する。",
+        )
+    )
+    f.append(gap(11))
+    f.append(
+        table(
+            [
+                ["レベル", "速度上限", "行動ノイズ", "実測 (通過数 / 60 秒)"],
+                ["EASY", "6 m/s", "0.35", "15.4"],
+                ["NORMAL", "9 m/s", "0.20", "22.5"],
+                ["HARD", "12 m/s", "0.10", "28.9"],
+                ["FULL POWER", "制限なし", "0", "39.3"],
+            ],
+            [34 * mm, 28 * mm, 28 * mm, CONTENT_W - 90 * mm],
+            center=[1, 2, 3],
+        )
+    )
+    f.append(gap(9))
+    f.append(
+        p(
+            "参考までに、手書きの貪欲方策が 34.4 個。"
+            "HARD がその少し下、FULL POWER が上回る位置にある。",
+            "small",
+        )
+    )
+    f.append(gap(11))
+    f.append(
+        callout(
+            "手加減が観測を歪めないようにする",
+            "観測に含まれる自機の速度は、最高速で割って正規化してある。"
+            "だから手加減のつもりで<b>最高速そのものを下げると、正規化の基準まで変わり</b>、"
+            "方策から見える世界が歪む。「弱くしたはずが挙動がおかしい」という"
+            "分かりにくい不具合になる。"
+            "そこで観測の正規化に使う値と、手加減用の速度上限は別の変数に分けた。"
+            "前作は正規化に定数を使っていたので、この問題自体が存在しなかった箇所である。",
+        )
+    )
+
+    # ---------------------------------------------------------------- 8
+    f.append(heading("8", "つまずいた点と、どう回避したか"))
     f.append(gap(9))
     f.append(
         table(
@@ -939,7 +1179,9 @@ def story() -> list:
                 [
                     "Godot 単体で学習済みモデルを動かせない",
                     "godot-rl の ONNX 推論部は C# 実装で、この環境の Godot は非 .NET ビルドだった。"
-                    "そこで「Python が推論し、Godot が描画する」構成にした。"
+                    "学習直後のモデルを観る用途 (play_ai.py) は「Python が推論し、Godot が描画する」"
+                    "構成で回避した。対戦モードの方は<b>重みを GDScript に埋め込む</b>ことで、"
+                    "Python 無しでも動くようにしている (7 章)。"
                     "将来 .NET ビルドへ移れるよう .onnx も出力してある",
                 ],
                 [
@@ -954,6 +1196,28 @@ def story() -> list:
                     "自前で Godot を起動して接続する形にして 48 体並列を実現した",
                 ],
                 [
+                    "コース生成のシードを固定したら学習が壊れかけた",
+                    "ゴースト対戦のために「2 本のコースに同じ乱数シードを与える」仕組みを足したところ、"
+                    "既定値のままだと<b>学習用の 16 コースが全部同じ形になり、しかも毎エピソード同じ</b>に"
+                    "なってしまう。学習の多様性が失われる。"
+                    "「0 = 毎回ランダム」という規約にして、対戦のときだけ明示的に同じ値を入れる形にした",
+                ],
+                [
+                    "落下影が追従カメラでは見えなかった",
+                    "高度の手がかりとして機体の真下に影を落としたが、"
+                    "追従カメラは機体の後ろから見ているので<b>真下の地面は画面の下端より外</b>に来てしまう。"
+                    "一時的に影を派手な色に塗って切り分けた。"
+                    "進行方向の先に投影する対地マーカーに変更し、"
+                    "機体からの距離で高度を、位置で「このまま行くとどこに着くか」を示すようにした",
+                ],
+                [
+                    "演出のサイズが前作のカメラ前提だった",
+                    "前作は 20m 上空から見下ろすカメラだが、今作は機体の 10m 後ろ。"
+                    "そのまま流用したら「+1」の吹き出しと破片が画面を埋め尽くした。"
+                    "演出にサイズ倍率を足して 0.4 倍にした。"
+                    "トレイルも機体の位置に置くと白い板が機体に重なるので、1.8m 後ろにずらした",
+                ],
+                [
                     "コンテナ内のプレイが 25fps しか出ない",
                     "描画自体 (CPU ソフトウェア描画) は 65fps 出ており、"
                     "遅いのは X11 のフレーム転送だと実測で切り分けた。"
@@ -964,10 +1228,10 @@ def story() -> list:
         )
     )
 
-    f.append(PageBreak())
+    f.append(gap(15))
 
-    # ---------------------------------------------------------------- 8
-    f.append(heading("8", "実測値と動かし方"))
+    # ---------------------------------------------------------------- 9
+    f.append(heading("9", "実測値と動かし方"))
     f.append(gap(9))
     f.append(sub("性能 (CPU 12 コア / RAM 7GB / GPU 無し)"))
     f.append(gap(6))
@@ -981,6 +1245,8 @@ def story() -> list:
                 ["メモリ (Godot ヘッドレス 1 プロセス ／ Python 側)", "85 MB ／ 672 MB"],
                 ["描画 FPS (ローカル、1152 × 648)", "65.3 fps"],
                 ["描画 FPS (X11 転送、1152 × 648)", "12.0 fps"],
+                ["埋め込んだ方策の重み", "5,507 個 (base64 で 31 KB)"],
+                ["ゲーム内 AI のスコア (全力)", "39.25 個 (Python 推論は 39.6)"],
             ],
             [CONTENT_W - 40 * mm, 40 * mm],
             center=[1],
@@ -1006,10 +1272,23 @@ def story() -> list:
             [
                 ["やりたいこと", "コマンド"],
                 ["ブラウザで遊ぶ", "python tools/serve_web.py → http://localhost:8000 を開く"],
+                [
+                    "AI と対戦する",
+                    "タイトル画面で SPACE。1〜4 で AI の強さ、M で VS / SOLO、G で前作へ",
+                ],
                 ["AI を学習させる", "python tools/train.py --steps 600000"],
                 ["AI のプレイを観る", "python tools/play_ai.py"],
                 ["AI のスコアだけ測る", "python tools/play_ai.py --headless --episodes 10"],
                 ["手書き方策の基準値を測る", "python tools/greedy_flyby.py --episodes 8"],
+                [
+                    "ゲーム内 AI の強さを測る",
+                    "godot --headless --path game --bench --bench-speed-cap=9 --bench-noise=0.2",
+                ],
+                [
+                    "埋め込みが正しいか確かめる",
+                    "python tools/export_policy.py --game flyby<br/>"
+                    "godot --headless --path game --policy-probe",
+                ],
                 ["前作 (Ball Collector) を動かす", "上記に --game ball を付ける"],
             ],
             [42 * mm, CONTENT_W - 42 * mm],
