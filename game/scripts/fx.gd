@@ -115,14 +115,27 @@ class _BallFx:
 
 		# 球は地面に落ちる影でよいが、空を飛ぶ機体では暗い地面に暗い影が埋もれてしまう。
 		# そこで機体色の加算マーカーにして、地面のどこを指しているかを読めるようにする。
-		var shadow_mat := (
-			root._flat_material(color, BaseMaterial3D.BLEND_MODE_ADD, false)
-			if air
-			else root._flat_material(Color(0.0, 0.0, 0.02, 0.6), BaseMaterial3D.BLEND_MODE_MIX, false)
-		)
+		# 加算描画は明るい地面の上では白飛びして見えなくなるので、
+		# 明るいテーマのときは通常合成の濃い色に切り替える
+		var bright := WorldView.light_theme()
+		var shadow_mat: StandardMaterial3D
+		if air:
+			shadow_mat = (
+				root._flat_material(color.darkened(0.25), BaseMaterial3D.BLEND_MODE_MIX, false)
+				if bright
+				else root._flat_material(color, BaseMaterial3D.BLEND_MODE_ADD, false)
+			)
+		else:
+			shadow_mat = root._flat_material(
+				Color(0.0, 0.0, 0.02, 0.6), BaseMaterial3D.BLEND_MODE_MIX, false
+			)
 		_shadow = Fx._quad(root, shadow_mat, 3.4 if air else 2.6, true)
 
-		var trail_mat := root._flat_material(color, BaseMaterial3D.BLEND_MODE_ADD, true)
+		var trail_mat := root._flat_material(
+			color.darkened(0.15) if bright else color,
+			BaseMaterial3D.BLEND_MODE_MIX if bright else BaseMaterial3D.BLEND_MODE_ADD,
+			true
+		)
 		_ages = PackedFloat32Array()
 		_ages.resize(Fx.TRAIL_SEGMENTS)
 		for i in Fx.TRAIL_SEGMENTS:

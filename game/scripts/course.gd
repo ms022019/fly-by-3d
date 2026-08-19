@@ -86,6 +86,12 @@ func _ready() -> void:
 	player = $Drone
 	if not show_scenery:
 		$Ground.visible = false
+	elif WorldView.light_theme():
+		# 印刷用の明るいテーマ。地面を白寄りにする
+		var ground := StandardMaterial3D.new()
+		ground.albedo_color = Color(0.90, 0.92, 0.95)
+		ground.roughness = 1.0
+		($Ground as MeshInstance3D).material_override = ground
 	player.course = self
 	_ai = player.ai
 	_build_gates()
@@ -315,7 +321,9 @@ func _build_ground_grid() -> void:
 	var mesh := ImmediateMesh.new()
 	var material := StandardMaterial3D.new()
 	material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
-	material.albedo_color = Color(0.34, 0.42, 0.58)
+	material.albedo_color = (
+		Color(0.52, 0.58, 0.70) if WorldView.light_theme() else Color(0.34, 0.42, 0.58)
+	)
 	mesh.surface_begin(Mesh.PRIMITIVE_LINES, material)
 	var t := -half
 	while t <= half:

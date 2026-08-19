@@ -35,6 +35,14 @@ python tools/make_article_pdf.py    # -> docs/FlyBy3D_article_ja.pdf
 記事中の画像は GitHub Pages の URL を指しているが、PDF では取りに行かず
 `images/` のローカルファイルを使う (ファイル名で対応付けている)。
 
+**画面写真は PDF だけ明るいテーマの版に差し替わる。** 紙に刷ると黒ベタが
+汚れるため。`images/light/` に同名のファイルがあればそちらが優先される。
+撮り直すときは `--light` を付けて起動する。
+
+```bash
+xvfb-run -s "-screen 0 1280x720x24" godot --path game --resolution 1152x648 --light
+```
+
 ## 画像を作り直すとき
 
 図はレポート生成スクリプトの関数をそのまま呼んで書き出している。

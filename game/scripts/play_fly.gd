@@ -222,7 +222,7 @@ func _tick_playing() -> void:
 			_last_beep = whole
 			_sfx.play("beep", 1.3)
 	else:
-		_time_label.add_theme_color_override("font_color", WorldView.UI_FONT_COLOR)
+		_time_label.add_theme_color_override("font_color", WorldView.ui_color)
 
 
 ## 相手との差を 1 行で出す。同じ経路を飛ぶので、差は「経路上の進行距離」の 1 次元で表せる。
@@ -236,7 +236,9 @@ func _update_gap() -> void:
 	var seconds: float = absf(meters) / maxf(course.player.speed, 1.0)
 	var ahead := meters >= 0.0
 	_gap_label.text = "%+d gates   %0.1fs %s" % [gates, seconds, "AHEAD" if ahead else "BEHIND"]
-	_gap_label.add_theme_color_override("font_color", YOU_COLOR if ahead else AI_COLOR)
+	_gap_label.add_theme_color_override(
+		"font_color", _ui(YOU_COLOR) if ahead else _ui(AI_COLOR)
+	)
 
 
 func _on_episode_finished(score: int) -> void:
@@ -251,7 +253,7 @@ func _on_episode_finished(score: int) -> void:
 			_losses += 1
 			_sfx.play("lose")
 	_shake = 0.35
-	_time_label.add_theme_color_override("font_color", WorldView.UI_FONT_COLOR)
+	_time_label.add_theme_color_override("font_color", WorldView.ui_color)
 	_refresh_overlay()
 
 
@@ -377,6 +379,12 @@ func _tint(drone: RigidBody3D, color: Color) -> void:
 #endregion
 
 
+## 明るいテーマでは背景が白寄りになるので、HUD の色をそのまま使うと沈む。
+## 3D 側の機体色は地面との対比で見えるので、文字だけ濃くする。
+func _ui(color: Color) -> Color:
+	return color.darkened(0.35) if WorldView.light_theme() else color
+
+
 func _build_hud() -> void:
 	var layer := CanvasLayer.new()
 	add_child(layer)
@@ -394,14 +402,14 @@ func _build_hud() -> void:
 	# 左: 自分  /  右: AI
 	var you_name := WorldView.make_label(_hud, 22, "YOU")
 	you_name.position = Vector2(30.0, 14.0)
-	you_name.add_theme_color_override("font_color", YOU_COLOR)
+	you_name.add_theme_color_override("font_color", _ui(YOU_COLOR))
 	_you_score = WorldView.make_label(_hud, 56, "0")
 	_you_score.position = Vector2(30.0, 36.0)
 	_speed_label = WorldView.make_label(_hud, 20, "SPD  13.0")
 	_speed_label.position = Vector2(30.0, 104.0)
 
 	_ai_name = _make_right_label(22, "AI", 14.0)
-	_ai_name.add_theme_color_override("font_color", AI_COLOR)
+	_ai_name.add_theme_color_override("font_color", _ui(AI_COLOR))
 	_ai_score = _make_right_label(56, "0", 36.0)
 
 	# 中央: 残り時間とライバルとの差

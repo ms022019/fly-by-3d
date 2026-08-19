@@ -62,6 +62,9 @@ OUT = ROOT / "docs" / "FlyBy3D_article_ja.pdf"
 
 LINK_COLOR = "#1D5FBF"
 CODE_COLOR = "#8E2438"
+# 印刷したときにベタ塗りで汚れないよう、表のヘッダは白地に罫線で見せる
+HEAD_BG = colors.HexColor("#EEF0F6")
+ZEBRA = colors.HexColor("#FAFBFD")
 
 
 # --------------------------------------------------------------------------- markdown
@@ -184,10 +187,12 @@ def md_table(rows: list[list[str]]) -> Table:
 
     data = []
     for r, row in enumerate(rows):
-        data.append([Paragraph(inline(c), S["th"] if r == 0 else S["cell"]) for c in row])
+        data.append([Paragraph(inline(c), S["thl"] if r == 0 else S["cell"]) for c in row])
     t = Table(data, colWidths=widths, repeatRows=1)
     style = [
-        ("BACKGROUND", (0, 0), (-1, 0), NAVY),
+        ("BACKGROUND", (0, 0), (-1, 0), HEAD_BG),
+        ("LINEBELOW", (0, 0), (-1, 0), 1.1, INK),
+        ("LINEABOVE", (0, 0), (-1, 0), 0.6, LINE),
         ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
         ("TOPPADDING", (0, 0), (-1, -1), 4.5),
         ("BOTTOMPADDING", (0, 0), (-1, -1), 4.5),
@@ -196,13 +201,17 @@ def md_table(rows: list[list[str]]) -> Table:
         ("LINEBELOW", (0, 1), (-1, -1), 0.4, LINE),
     ]
     for r in range(2, len(rows), 2):
-        style.append(("BACKGROUND", (0, r), (-1, r), PANEL))
+        style.append(("BACKGROUND", (0, r), (-1, r), ZEBRA))
     t.setStyle(TableStyle(style))
     return t
 
 
 def picture(name: str) -> list:
-    path = IMG_DIR / name
+    # 紙に刷ると画面写真の黒ベタが汚れるので、明るいテーマで撮り直した版が
+    # あればそちらを使う (図はもともと白地なので light/ には置いていない)。
+    path = IMG_DIR / "light" / name
+    if not path.exists():
+        path = IMG_DIR / name
     if not path.exists():
         return []
     width, height = ImageReader(str(path)).getSize()
@@ -332,6 +341,10 @@ if __name__ == "__main__":
 
     S["code"] = ParagraphStyle(
         "code", fontName=FONT, textColor=INK, fontSize=8.6, leading=13.5, wordWrap="CJK"
+    )
+    # 表のヘッダ。白地に濃い文字 (紙に刷ったときベタ塗りにならないように)
+    S["thl"] = ParagraphStyle(
+        "thl", fontName=FONT_B, textColor=INK, fontSize=8.8, leading=14, wordWrap="CJK"
     )
     OUT.parent.mkdir(parents=True, exist_ok=True)
     build()

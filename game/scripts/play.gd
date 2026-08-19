@@ -206,7 +206,7 @@ func _tick_playing() -> void:
 			_last_beep = whole
 			_sfx.play("beep", 1.3)
 	else:
-		_time_label.add_theme_color_override("font_color", WorldView.UI_FONT_COLOR)
+		_time_label.add_theme_color_override("font_color", WorldView.ui_color)
 
 
 func _on_episode_finished(score: int) -> void:
@@ -220,7 +220,7 @@ func _on_episode_finished(score: int) -> void:
 		_losses += 1
 		_sfx.play("lose")
 	_shake = 0.35
-	_time_label.add_theme_color_override("font_color", WorldView.UI_FONT_COLOR)
+	_time_label.add_theme_color_override("font_color", WorldView.ui_color)
 	_refresh_overlay()
 
 
@@ -335,6 +335,11 @@ func _update_bars() -> void:
 #endregion
 
 
+## 明るいテーマでは背景が白寄りになるので、HUD の文字色を濃くする
+func _ui(color: Color) -> Color:
+	return color.darkened(0.35) if WorldView.light_theme() else color
+
+
 func _build_hud() -> void:
 	var layer := CanvasLayer.new()
 	add_child(layer)
@@ -353,12 +358,12 @@ func _build_hud() -> void:
 	# 左: 自分  /  右: AI
 	var you_name := WorldView.make_label(_hud, 22, "YOU")
 	you_name.position = Vector2(30.0, 14.0)
-	you_name.add_theme_color_override("font_color", Arena.PLAYER_COLOR)
+	you_name.add_theme_color_override("font_color", _ui(Arena.PLAYER_COLOR))
 	_you_score = WorldView.make_label(_hud, 56, "0")
 	_you_score.position = Vector2(30.0, 36.0)
 
 	_ai_name = _make_right_label(22, "AI", 14.0)
-	_ai_name.add_theme_color_override("font_color", Arena.RIVAL_COLOR)
+	_ai_name.add_theme_color_override("font_color", _ui(Arena.RIVAL_COLOR))
 	_ai_score = _make_right_label(56, "0", 36.0)
 
 	# 中央: 残り時間

@@ -11,16 +11,44 @@ const CAM_OFFSET := Vector3(0.0, 20.0, 17.0)
 const CAM_PITCH := -50.0
 
 const UI_FONT_COLOR := Color(0.96, 0.97, 1.0)
+## 明るいテーマでの文字色 (白地に白文字だと読めないため)
+const UI_FONT_COLOR_DARK := Color(0.09, 0.11, 0.17)
+
+## 現在の HUD 文字色。build_world がテーマに応じて設定する
+static var ui_color := UI_FONT_COLOR
+
+static var _light_checked := false
+static var _light := false
+
+
+## --light が付いていれば明るいテーマ。
+## 記事や資料に載せるスクリーンショットを印刷したとき、
+## 画面の大半が黒ベタになって汚れるのを避けるために用意している。
+static func light_theme() -> bool:
+	if not _light_checked:
+		_light_checked = true
+		_light = "--light" in OS.get_cmdline_args()
+	return _light
 
 
 static func build_world(root: Node3D) -> Camera3D:
+	var bright := light_theme()
+	ui_color = UI_FONT_COLOR_DARK if bright else UI_FONT_COLOR
 	var sky_material := ProceduralSkyMaterial.new()
-	sky_material.sky_top_color = Color(0.06, 0.08, 0.22)
-	sky_material.sky_horizon_color = Color(0.36, 0.40, 0.66)
+	sky_material.sky_top_color = (
+		Color(0.55, 0.71, 0.92) if bright else Color(0.06, 0.08, 0.22)
+	)
+	sky_material.sky_horizon_color = (
+		Color(0.93, 0.95, 0.98) if bright else Color(0.36, 0.40, 0.66)
+	)
 	# カメラは見下ろしているので、画面の外側はほぼ「空の地面側」で埋まる。
 	# ここを真っ黒にすると寂しいので、紫寄りのグラデーションにしている。
-	sky_material.ground_bottom_color = Color(0.07, 0.06, 0.16)
-	sky_material.ground_horizon_color = Color(0.26, 0.24, 0.44)
+	sky_material.ground_bottom_color = (
+		Color(0.82, 0.84, 0.89) if bright else Color(0.07, 0.06, 0.16)
+	)
+	sky_material.ground_horizon_color = (
+		Color(0.90, 0.92, 0.95) if bright else Color(0.26, 0.24, 0.44)
+	)
 
 	var sky := Sky.new()
 	sky.sky_material = sky_material
@@ -29,10 +57,12 @@ static func build_world(root: Node3D) -> Camera3D:
 	environment.background_mode = Environment.BG_SKY
 	environment.sky = sky
 	environment.ambient_light_source = Environment.AMBIENT_SOURCE_SKY
-	environment.ambient_light_energy = 1.25
+	environment.ambient_light_energy = 1.6 if bright else 1.25
 	# 遠くを薄く霞ませると、影が無くても奥行きが出る (影は llvmpipe には重すぎる)
 	environment.fog_enabled = true
-	environment.fog_light_color = Color(0.28, 0.30, 0.50)
+	environment.fog_light_color = (
+		Color(0.88, 0.91, 0.96) if bright else Color(0.28, 0.30, 0.50)
+	)
 	environment.fog_density = 0.006
 	environment.fog_sky_affect = 0.0
 
@@ -119,8 +149,8 @@ static func follow_chase(
 static func make_floor_material(arena_size: float) -> StandardMaterial3D:
 	var size := 64
 	var image := Image.create(size, size, false, Image.FORMAT_RGBA8)
-	var base := Color(0.17, 0.20, 0.29)
-	var line := Color(0.36, 0.44, 0.62)
+	var base := Color(0.90, 0.92, 0.95) if light_theme() else Color(0.17, 0.20, 0.29)
+	var line := Color(0.55, 0.62, 0.75) if light_theme() else Color(0.36, 0.44, 0.62)
 	for y in size:
 		for x in size:
 			var on_line := x < 2 or y < 2
@@ -153,8 +183,11 @@ static func make_label(parent: Node, font_size: int, text: String) -> Label:
 	var label := Label.new()
 	label.text = text
 	label.add_theme_font_size_override("font_size", font_size)
-	label.add_theme_color_override("font_color", UI_FONT_COLOR)
-	label.add_theme_color_override("font_shadow_color", Color(0.0, 0.0, 0.0, 0.7))
+	label.add_theme_color_override("font_color", ui_color)
+	label.add_theme_color_override(
+		"font_shadow_color",
+		Color(1.0, 1.0, 1.0, 0.75) if light_theme() else Color(0.0, 0.0, 0.0, 0.7)
+	)
 	label.add_theme_constant_override("shadow_offset_x", 2)
 	label.add_theme_constant_override("shadow_offset_y", 3)
 	label.mouse_filter = Control.MOUSE_FILTER_IGNORE

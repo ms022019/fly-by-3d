@@ -8,6 +8,9 @@ signal passed(gate: Node3D)
 
 const COLOR_NEXT := Color(1.0, 0.78, 0.22)
 const COLOR_LATER := Color(0.35, 0.62, 0.95)
+## 明るいテーマでは背景が白寄りになるので、リングも濃い色にしないと沈む
+const COLOR_NEXT_LIGHT := Color(0.95, 0.55, 0.05)
+const COLOR_LATER_LIGHT := Color(0.16, 0.42, 0.80)
 
 ## くぐるべき向き (Course ローカル座標系)。逆走判定に使う。
 var normal := Vector3.FORWARD
@@ -43,10 +46,19 @@ func setup(local_pos: Vector3, dir: Vector3) -> void:
 func set_next(is_next: bool) -> void:
 	if _material == null:
 		return
-	var color := COLOR_NEXT if is_next else COLOR_LATER
+	var light := WorldView.light_theme()
+	var color: Color
+	if light:
+		color = COLOR_NEXT_LIGHT if is_next else COLOR_LATER_LIGHT
+	else:
+		color = COLOR_NEXT if is_next else COLOR_LATER
 	_material.albedo_color = color
 	_material.emission = color
-	_material.emission_energy_multiplier = 2.2 if is_next else 1.0
+	# 明るい背景では自己発光を強くすると白飛びして輪郭が消える
+	if light:
+		_material.emission_energy_multiplier = 0.35 if is_next else 0.15
+	else:
+		_material.emission_energy_multiplier = 2.2 if is_next else 1.0
 
 
 func _on_body_entered(body: Node3D) -> void:
