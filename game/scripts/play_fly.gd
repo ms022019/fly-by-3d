@@ -56,6 +56,9 @@ var _sub_center: Label
 var _hint: Label
 var _time_bar: ColorRect
 var _dim: ColorRect
+## スマートフォン用。タッチ画面のときだけ作られる
+var _touch: TouchUi = null
+var _touch_buttons: Array = []
 
 
 func _ready() -> void:
@@ -77,6 +80,7 @@ func _ready() -> void:
 	course.episode_finished.connect(_on_episode_finished)
 	rival_course.score_changed.connect(_on_rival_score_changed)
 
+	_build_touch_ui()
 	_apply_level()
 	_enter_title()
 	WorldView.follow_chase(_camera, course.player, 0.0, true)
@@ -93,11 +97,20 @@ func _process(delta: float) -> void:
 		_:
 			_hold()
 
+	if _touch != null:
+		course.player.touch = _touch.value
 	_shake = maxf(_shake - delta * 1.6, 0.0)
 	WorldView.follow_chase(_camera, course.player, delta, false, _shake)
 
 
 func _unhandled_input(event: InputEvent) -> void:
+	# スマートフォン: 画面をタップして開始する (SPACE が押せないため)。
+	# ただし画面下部はボタンの帯なので除外する。ここを見ないと
+	# 「AI の強さ」を押したつもりが同時にレースも始まってしまう。
+	if event is InputEventScreenTouch and event.pressed and _phase != Phase.PLAYING:
+		if event.position.y < get_viewport().get_visible_rect().size.y - 200.0:
+			_enter_countdown()
+		return
 	if not (event is InputEventKey and event.pressed and not event.echo):
 		return
 	match event.physical_keycode:
@@ -168,8 +181,11 @@ func _tick_countdown() -> void:
 		_start_race()
 		_center.text = ""
 		_sub_center.text = ""
+		_refresh_touch_buttons()
 		_hint.text = (
-			"W/S : climb, dive    A/D : turn    Shift : brake    R : restart    Esc : quit"
+			"drag left : steer      right : brake"
+			if _touch != null
+			else "W/S : climb, dive    A/D : turn    Shift : brake    R : restart    Esc : quit"
 		)
 		return
 	_center.text = "%d" % remaining if remaining > 0 else "GO!"
@@ -257,6 +273,7 @@ func _apply_level() -> void:
 
 func _refresh_overlay() -> void:
 	_dim.visible = _phase == Phase.TITLE or _phase == Phase.RESULT
+	_refresh_touch_buttons()
 	var mode_text: String = "VS AI" if _versus else "SOLO"
 	match _phase:
 		Phase.TITLE:
@@ -266,14 +283,18 @@ func _refresh_overlay() -> void:
 					"%s\n\n"
 					+ "fly through the rings.  the AI is a PPO policy\n"
 					+ "trained on this game, now running inside the game itself\n\n"
-					+ "AI level:  %s      (1-4 to change)      M : VS / SOLO\n\n"
-					+ "press  SPACE  to start"
+					+ "AI level:  %s\n\n"
+					+ ("tap to start" if _touch != null else "press  SPACE  to start")
 				)
 				% [mode_text, LEVELS[_level]["name"]]
 			)
 			_hint.text = (
-				"W/S : climb, dive    A/D : turn    Shift : brake"
-				+ "    M : mode    G : other game    Esc : quit"
+				"drag the left side to steer      touch the right side to brake"
+				if _touch != null
+				else (
+					"W/S : climb, dive    A/D : turn    Shift : brake"
+					+ "    M : mode    G : other game    Esc : quit"
+				)
 			)
 		Phase.COUNTDOWN:
 			_sub_center.text = ""
@@ -397,6 +418,63 @@ func _build_hud() -> void:
 	_hint.set_anchors_and_offsets_preset(Control.PRESET_BOTTOM_WIDE)
 	_hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_hint.offset_top = -42.0
+
+
+## タッチ画面のときだけ、画面上の操作 UI を作る。
+## キーボードが無い端末では SPACE も 1-4 も M も押せないため、
+## 開始・AI の強さ・モード切り替えを画面上に置く。
+func _build_touch_ui() -> void:
+	# --force-touch はデスクトップでスマートフォン用 UI を確認するための開発用
+	var forced := "--force-touch" in OS.get_cmdline_args()
+	if not DisplayServer.is_touchscreen_available() and not forced:
+		return
+	_touch = TouchUi.new()
+	_hud.add_child(_touch)
+	course.player.touch_active = true
+	_touch_buttons = [
+		_make_touch_button(-210.0, func(): _cycle_level()),
+		_make_touch_button(10.0, func(): _toggle_mode()),
+	]
+	_refresh_touch_buttons()
+
+
+func _make_touch_button(offset_x: float, action: Callable) -> Button:
+	var b := Button.new()
+	b.add_theme_font_size_override("font_size", 22)
+	b.anchor_left = 0.5
+	b.anchor_right = 0.5
+	b.anchor_top = 1.0
+	b.anchor_bottom = 1.0
+	b.offset_left = offset_x
+	b.offset_right = offset_x + 200.0
+	b.offset_top = -156.0
+	b.offset_bottom = -88.0
+	b.pressed.connect(action)
+	_hud.add_child(b)
+	return b
+
+
+func _cycle_level() -> void:
+	_level = (_level + 1) % LEVELS.size()
+	_apply_level()
+	_refresh_overlay()
+
+
+func _toggle_mode() -> void:
+	_versus = not _versus
+	_apply_mode()
+	_refresh_overlay()
+
+
+## ボタンの文字はモードとレベルに追従させ、プレイ中は隠す (指の邪魔になるため)
+func _refresh_touch_buttons() -> void:
+	if _touch_buttons.is_empty():
+		return
+	var playing := _phase == Phase.PLAYING
+	_touch_buttons[0].text = "AI: %s" % LEVELS[_level]["name"]
+	_touch_buttons[0].visible = not playing and _versus
+	_touch_buttons[1].text = "VS AI" if _versus else "SOLO"
+	_touch_buttons[1].visible = not playing
 
 
 func _make_right_label(font_size: int, text: String, top: float) -> Label:

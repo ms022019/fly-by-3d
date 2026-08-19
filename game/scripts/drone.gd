@@ -51,6 +51,10 @@ var speed_cap := 0.0
 ## 手加減用の行動ノイズ (標準偏差)。大きいほど狙いを外す。
 var action_noise := 0.0
 
+## タッチ UI からの入力 (スマートフォン用)。play_fly.gd が毎フレーム書き込む。
+var touch := Vector3(0.0, 0.0, 1.0)
+var touch_active := false
+
 var _policy_action := Vector3(0.0, 0.0, 1.0)
 var _policy_wait := 0
 
@@ -127,6 +131,13 @@ func _read_input() -> Vector3:
 		v.y -= 1.0
 	if Input.is_physical_key_pressed(KEY_SHIFT):
 		v.z = -1.0
+	if touch_active:
+		# キーボードとタッチのどちらでも操作できるよう、入力があった方を採る
+		if absf(touch.x) > absf(v.x):
+			v.x = touch.x
+		if absf(touch.y) > absf(v.y):
+			v.y = touch.y
+		v.z = minf(v.z, touch.z)
 	return v
 
 
