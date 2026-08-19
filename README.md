@@ -9,6 +9,10 @@ Godot 4.4 + [godot-rl](https://github.com/edbeeching/godot_rl_agents) + Stable-B
 **学習済み AI とその場で対戦できる。** 方策の重みをゲームに埋め込んであるので、
 Python もサーバーも要らない。ブラウザを開けば AI が隣で飛んでいる (走っている)。
 
+### ▶ ブラウザで今すぐ遊ぶ — https://ms022019.github.io/fly-by-3d/
+
+インストール不要。`SPACE` で開始、`1`〜`4` で AI の強さ、`M` でソロ、`G` でもう一方のゲームへ。
+
 | ゲーム | 内容 | 学習前 (ランダム) | 手書きの貪欲方策 | **PPO** |
 |---|---|---|---|---|
 | **Fly By** (既定) | 空中のリングを連続でくぐる | 0.0 | 34.4 | **39.6** |
@@ -21,7 +25,12 @@ Python もサーバーも要らない。ブラウザを開けば AI が隣で飛
 
 ## 1. 遊ぶ
 
-### 方法 A: ブラウザ (推奨・いちばん滑らか)
+### 方法 A: 公開版をブラウザで開く (いちばん手軽)
+
+**https://ms022019.github.io/fly-by-3d/** を開くだけ。GitHub Pages で配信している。
+転送されるのは gzip 圧縮後で約 9MB。
+
+### 方法 B: 手元のビルドをブラウザで開く (改造したものを試すとき)
 
 ```bash
 python tools/serve_web.py
@@ -36,7 +45,7 @@ VS Code がポートを転送するので、ホストの Chrome / Edge で **htt
 godot --headless --path game --export-release "Web" ../build/web/index.html
 ```
 
-### 方法 B: Windows でネイティブ実行 (最速・音も出る)
+### 方法 C: Windows でネイティブ実行 (最速・音も出る)
 
 ```bash
 godot --headless --path game --export-release "Windows Desktop" ../build/windows/FlyBy3D.exe
@@ -44,14 +53,14 @@ godot --headless --path game --export-release "Windows Desktop" ../build/windows
 
 VS Code のエクスプローラでファイルを右クリック →「ダウンロード」でホストに取り出せる。
 
-### 方法 C: コンテナ内で直接ウィンドウ実行 (セットアップ不要・ただし約 25fps)
+### 方法 D: コンテナ内で直接ウィンドウ実行 (セットアップ不要・ただし約 25fps)
 
 ```bash
 godot --path game                # Fly By
 godot --path game --game=ball    # Ball Collector
 ```
 
-X11 転送経由なので **25fps 程度**しか出ない (理由は「8. 実測値」参照)。
+X11 転送経由なので **25fps 程度**しか出ない (理由は「9. 実測値」参照)。
 
 ### 操作
 
@@ -196,7 +205,37 @@ python tools/greedy_flyby.py --episodes 8
 
 ---
 
-## 6. 構成
+## 6. 公開する
+
+GitHub Pages で配信している。**サーバー側の処理が一切ない静的ファイルだけ**なので、
+置ける場所ならどこでも動く。Web ビルドはスレッドを無効にして書き出してあるため、
+`COOP` / `COEP` ヘッダを立てる必要もない (立てられないホストでもそのまま動く)。
+
+```
+master     ソース一式・レポート
+gh-pages   Web ビルドのみ (index.* と .nojekyll)
+```
+
+ソースとビルドをブランチで分けているので、master に 43MB のバイナリが混ざらない。
+`index.wasm` は Godot のランタイムなので、ゲームを更新しても中身は変わらない
+(変わるのは 188KB の `index.pck` だけ)。
+
+ゲームを更新したときの手順:
+
+```bash
+godot --headless --path game --export-release "Web" ../build/web/index.html
+git switch gh-pages
+cp build/web/index.* .
+git add -A && git commit -m "Web ビルドを更新" && git push
+git switch master
+```
+
+push から 1 分ほどで反映される。`gh api repos/<user>/fly-by-3d/pages --jq .status` が
+`built` になれば完了。
+
+---
+
+## 7. 構成
 
 ```
 game/                        Godot プロジェクト
@@ -276,7 +315,7 @@ python tools/make_report_flyby.py    # docs/FlyBy3D_report_ja.pdf を作り直�
 
 ---
 
-## 7. AI の中身 (Fly By)
+## 8. AI の中身 (Fly By)
 
 **アルゴリズム**: PPO (Stable-Baselines3) / 64×64 の 2 層 MLP / パラメータ数は数千。画像は使わない。
 
@@ -321,7 +360,7 @@ python tools/make_report_flyby.py    # docs/FlyBy3D_report_ja.pdf を作り直�
 
 ---
 
-## 8. 実測値
+## 9. 実測値
 
 この環境 (CPU 12 コア / RAM 7GB / GPU なし) で測った値。
 
@@ -375,7 +414,7 @@ python tools/make_report_flyby.py    # docs/FlyBy3D_report_ja.pdf を作り直�
 
 ---
 
-## 9. 制約と既知の問題
+## 10. 制約と既知の問題
 
 - **Godot 内での ONNX 推論はできない。**
   プラグインの推論部は C# 実装で、この環境の Godot は非 .NET (標準) ビルド。
@@ -411,7 +450,7 @@ python tools/make_report_flyby.py    # docs/FlyBy3D_report_ja.pdf を作り直�
   mv /tmp/tpl/templates ~/.local/share/godot/export_templates/4.4.stable
   ```
 
-## 10. 次の一手
+## 11. 次の一手
 
 - **ロール + トルクによる本格的な姿勢制御**: 今の Fly By はピッチとヨーを直接指定する簡易モデルで、
   ロールは見た目だけ。角速度ではなくトルクを指令する 4 次元の行動にすると本格的な飛行になるが、
