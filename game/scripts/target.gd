@@ -1,7 +1,7 @@
 extends Area3D
 ## 集めるターゲット。取得されると collected を emit し、Arena が別位置へ再配置する。
 
-signal collected(target: Node3D)
+signal collected(target: Node3D, by: Node3D)
 
 @export var spin_speed := 1.8
 
@@ -28,4 +28,4 @@ func _process(delta: float) -> void:
 
 func _on_body_entered(body: Node3D) -> void:
 	if body.is_in_group("player"):
-		collected.emit(self)
+		collected.emit(self, body)

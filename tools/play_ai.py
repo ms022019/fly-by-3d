@@ -1,11 +1,12 @@
-"""学習済みモデルに Ball Collector 3D をプレイさせ、その様子をウィンドウで観る。
+"""学習済みモデルにゲームをプレイさせ、その様子をウィンドウで観る。
 
 この環境の Godot は非 .NET ビルドで、プラグインの ONNX 推論部 (C# 実装) が使えない。
 そのため Godot 単体で学習済みモデルを動かすことはできず、
 「Python が方策を推論し、Godot が描画する」という構成になる。
 
 例:
-    python tools/play_ai.py --model models/ball_collector.zip
+    python tools/play_ai.py                  # Fly By (既定)
+    python tools/play_ai.py --game ball      # Ball Collector
 """
 
 from __future__ import annotations
@@ -16,14 +17,16 @@ from pathlib import Path
 import numpy as np
 from stable_baselines3 import PPO
 
-from godot_launcher import LocalGodotVecEnv
+from godot_launcher import GAMES, LocalGodotVecEnv
 
 MODEL_DIR = Path(__file__).resolve().parent.parent / "models"
+MODEL_NAMES = {"flyby": "fly_by", "ball": "ball_collector"}
 
 
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--model", type=Path, default=MODEL_DIR / "ball_collector.zip")
+    parser.add_argument("--game", choices=GAMES, default="flyby")
+    parser.add_argument("--model", type=Path, default=None, help="既定はゲーム名から決める")
     parser.add_argument("--arenas", type=int, default=1, help="同時に見せるアリーナ数")
     parser.add_argument("--episodes", type=int, default=3)
     parser.add_argument("--port", type=int, default=11020)
@@ -36,6 +39,8 @@ def main() -> None:
         help="方策からサンプリングする (既定は決定論的に最頻行動を選ぶ)",
     )
     args = parser.parse_args()
+    if args.model is None:
+        args.model = MODEL_DIR / f"{MODEL_NAMES[args.game]}.zip"
 
     if not args.model.exists():
         raise SystemExit(f"model not found: {args.model}\nRun tools/train.py first.")
@@ -48,6 +53,7 @@ def main() -> None:
         speedup=args.speedup,
         action_repeat=args.action_repeat,
         headless=args.headless,
+        game=args.game,
     )
     model = PPO.load(args.model, device="cpu")
 
@@ -68,7 +74,7 @@ def main() -> None:
                 if dones[i]:
                     if warmed_up[i]:
                         finished.append(int(peak[i]))
-                        print(f"episode {len(finished):>3}:  {peak[i]} targets", flush=True)
+                        print(f"episode {len(finished):>3}:  {peak[i]} points", flush=True)
                     else:
                         warmed_up[i] = True
                     peak[i] = 0

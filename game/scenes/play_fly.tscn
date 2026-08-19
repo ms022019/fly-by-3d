@@ -1,0 +1,15 @@
+[gd_scene load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://scripts/play_fly.gd" id="1"]
+[ext_resource type="PackedScene" path="res://scenes/course.tscn" id="2"]
+
+[node name="PlayFly" type="Node3D"]
+script = ExtResource("1")
+
+[node name="Course" parent="." instance=ExtResource("2")]
+auto_reset = false
+
+[node name="RivalCourse" parent="." instance=ExtResource("2")]
+auto_reset = false
+physics_layer = 2
+show_scenery = false

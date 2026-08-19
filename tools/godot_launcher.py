@@ -27,6 +27,10 @@ def find_godot() -> str:
     return godot
 
 
+#: 遊べるゲーム。boot.gd の GAMES と対応する。
+GAMES = ("flyby", "ball")
+
+
 def spawn_godot(
     *,
     port: int,
@@ -35,6 +39,7 @@ def spawn_godot(
     speedup: float,
     action_repeat: int,
     headless: bool,
+    game: str = "flyby",
     project_dir: Path = PROJECT_DIR,
 ) -> subprocess.Popen:
     """学習用シーンを開いた Godot プロセスを 1 つ起動する。"""
@@ -44,8 +49,9 @@ def spawn_godot(
     command += [
         "--path",
         str(project_dir),
-        # boot.gd がこの引数を見て train.tscn へ切り替える
+        # boot.gd がこの 2 つを見て、どのゲームの学習シーンを開くか決める
         "--train",
+        f"--game={game}",
         f"--n_arenas={arenas}",
         # 以下は addons/godot_rl_agents/sync.gd が読む引数
         f"--port={port}",
@@ -100,6 +106,7 @@ class LocalGodotVecEnv(StableBaselinesGodotEnv):
         speedup: float = 1.0,
         action_repeat: int = 8,
         headless: bool = True,
+        game: str = "flyby",
         project_dir: Path = PROJECT_DIR,
     ) -> None:
         self.procs: List[subprocess.Popen] = []
@@ -114,6 +121,7 @@ class LocalGodotVecEnv(StableBaselinesGodotEnv):
                         speedup=speedup,
                         action_repeat=action_repeat,
                         headless=headless,
+                        game=game,
                         project_dir=project_dir,
                     )
                 )

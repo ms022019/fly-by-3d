@@ -1,0 +1,17 @@
+[gd_scene load_steps=4 format=3]
+
+[ext_resource type="Script" path="res://scripts/train.gd" id="1"]
+[ext_resource type="Script" path="res://addons/godot_rl_agents/sync.gd" id="2"]
+[ext_resource type="PackedScene" path="res://scenes/course.tscn" id="3"]
+
+[node name="TrainFly" type="Node3D"]
+script = ExtResource("1")
+arena_scene = ExtResource("3")
+spacing = 200.0
+chase_camera = true
+
+[node name="Sync" type="Node" parent="."]
+script = ExtResource("2")
+control_mode = 1
+action_repeat = 8
+speed_up = 1.0

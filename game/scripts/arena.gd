@@ -1,24 +1,41 @@
 extends Node3D
+class_name Arena
 ## 1 プレイ分のフィールド。人間プレイでは 1 個、学習では複数個を並べて使う。
 ##
 ## エピソード管理 (60 秒 = 3600 physics tick) は AIController の
 ## n_steps / reset_after を唯一の基準にしている。これにより
 ## 人間プレイと AI 学習でエピソード長が必ず一致する。
+##
+## VS モード (rival_enabled) では、同じフィールドにもう 1 つ球を置き、
+## ゲーム内に埋め込んだ学習済み方策 (Policy) で走らせる。
+## ターゲットは共有なので、取った者勝ちの取り合いになる。
 
 signal score_changed(score: int)
+signal rival_score_changed(score: int)
 signal episode_finished(score: int)
+## 見せ方 (演出) 側に「どこで誰が取ったか」を伝えるための通知
+signal target_collected(at: Vector3, by_rival: bool)
+signal ball_fell(ball: RigidBody3D)
 
 const TARGET_SCENE := preload("res://scenes/target.tscn")
+const PLAYER_SCENE := preload("res://scenes/player.tscn")
 
 const FALL_Y := -8.0
 const TARGET_Y := 1.4
 const SPAWN_Y := 1.2
 const EDGE_MARGIN := 2.5
 
+const PLAYER_COLOR := Color(0.29, 0.68, 1.0)
+const RIVAL_COLOR := Color(1.0, 0.46, 0.28)
+
 @export var arena_size := 30.0
 @export var target_count := 6
 ## true: エピソード終了で即座に次を開始 (学習用) / false: 停止して結果表示 (人間プレイ用)
 @export var auto_reset := true
+## 学習済み方策で動くライバルを 1 体追加する (VS モード)
+@export var rival_enabled := false
+## 人間の代わりに埋め込み方策で main の球を動かす (ベンチマーク用)
+@export var player_is_policy := false
 
 @export_group("Reward")
 @export var reward_collect := 1.0
@@ -27,8 +44,10 @@ const EDGE_MARGIN := 2.5
 @export var reward_approach_scale := 0.02
 
 var player: RigidBody3D
+var rival: RigidBody3D
 var targets: Array = []
 var score := 0
+var rival_score := 0
 var running := true
 
 var _ai
@@ -39,6 +58,10 @@ func _ready() -> void:
 	player = $Player
 	player.arena = self
 	_ai = player.ai
+	if player_is_policy:
+		player.policy = Policy.ball()
+	if rival_enabled:
+		_spawn_rival()
 	_resize_platform()
 	_build_edge_rails()
 	_spawn_targets()
@@ -52,8 +75,10 @@ func _physics_process(_delta: float) -> void:
 	# 場外落下
 	if to_local(player.global_position).y < FALL_Y:
 		_ai.reward += reward_fall
-		_respawn_player()
+		_respawn(player)
 		_prev_dist = _nearest_distance()
+	if rival != null and to_local(rival.global_position).y < FALL_Y:
+		_respawn(rival)
 
 	# 距離シェーピング (近づいた分だけ加点 / 遠ざかれば減点)
 	var dist := _nearest_distance()
@@ -69,21 +94,35 @@ func _physics_process(_delta: float) -> void:
 		if auto_reset:
 			reset_episode()
 		else:
-			running = false
-			player.freeze = true
+			stop()
 		episode_finished.emit(final_score)
 
 
 func reset_episode() -> void:
 	score = 0
+	rival_score = 0
 	running = true
-	player.freeze = false
 	_ai.reset()
-	_respawn_player()
+	_reset_ball(player, -1.0 if rival != null else 0.0)
+	if rival != null:
+		_reset_ball(rival, 1.0)
 	for t in targets:
 		t.position = _random_spot()
 	_prev_dist = _nearest_distance()
 	score_changed.emit(score)
+	rival_score_changed.emit(rival_score)
+
+
+## 球を止めたまま時間も進めない状態にする (カウントダウン / 結果表示中)。
+func hold() -> void:
+	running = false
+	_freeze(true)
+	_ai.reset()
+
+
+func stop() -> void:
+	running = false
+	_freeze(true)
 
 
 ## 残り時間の割合 [0, 1]
@@ -123,18 +162,65 @@ func _spawn_targets() -> void:
 		targets.append(t)
 
 
-func _on_target_collected(t: Node3D) -> void:
+## ライバル球。人間の球と同じシーン・同じ物理で、入力元だけが方策になる。
+func _spawn_rival() -> void:
+	rival = PLAYER_SCENE.instantiate()
+	rival.name = "Rival"
+	add_child(rival)
+	rival.arena = self
+	rival.policy = Policy.ball()
+	_tint(rival, RIVAL_COLOR)
+	_tint(player, PLAYER_COLOR)
+
+
+func _tint(ball: RigidBody3D, color: Color) -> void:
+	if DisplayServer.get_name() == "headless":
+		return
+	var mat := StandardMaterial3D.new()
+	mat.albedo_color = color
+	mat.metallic = 0.35
+	mat.roughness = 0.3
+	mat.emission_enabled = true
+	mat.emission = color
+	mat.emission_energy_multiplier = 0.35
+	(ball.get_node("Mesh") as MeshInstance3D).material_override = mat
+
+
+func _on_target_collected(t: Node3D, by: Node3D) -> void:
 	if not running:
 		return
-	score += 1
-	_ai.reward += reward_collect
-	t.position = _random_spot_away_from(to_local(player.global_position))
+	var by_rival := by == rival
+	if by_rival:
+		rival_score += 1
+		rival_score_changed.emit(rival_score)
+	else:
+		score += 1
+		_ai.reward += reward_collect
+		score_changed.emit(score)
+	target_collected.emit(t.global_position, by_rival)
+	t.position = _random_spot_away_from(to_local(by.global_position))
 	_prev_dist = _nearest_distance()
-	score_changed.emit(score)
 
 
-func _respawn_player() -> void:
-	player.teleport(global_position + Vector3(0.0, SPAWN_Y, 0.0))
+func _respawn(ball: RigidBody3D) -> void:
+	ball_fell.emit(ball)
+	_reset_ball(ball, 0.0 if ball == player else 1.0)
+
+
+## 球を初期位置へ。side は VS モードでの左右の振り分け (-1 = 人間側, +1 = AI 側)。
+func _reset_ball(ball: RigidBody3D, side: float) -> void:
+	var target := global_position + Vector3(side * 3.5, SPAWN_Y, 0.0)
+	ball.freeze = false
+	# カウントダウン中は直後に freeze されるので、ノード側の座標も合わせておく
+	# (凍結した RigidBody3D には物理サーバー経由の移動が届かない)
+	ball.global_position = target
+	ball.teleport(target)
+
+
+func _freeze(value: bool) -> void:
+	player.freeze = value
+	if rival != null:
+		rival.freeze = value
 
 
 func _random_spot() -> Vector3:
@@ -142,7 +228,7 @@ func _random_spot() -> Vector3:
 	return Vector3(randf_range(-h, h), TARGET_Y, randf_range(-h, h))
 
 
-## 再出現直後に即取得されるのを避けるため、プレイヤーから一定距離を空ける。
+## 再出現直後に即取得されるのを避けるため、取った側から一定距離を空ける。
 func _random_spot_away_from(local_pos: Vector3) -> Vector3:
 	for i in 12:
 		var spot := _random_spot()
@@ -159,6 +245,17 @@ func _resize_platform() -> void:
 	var col_node: CollisionShape3D = $Platform/Collision
 	var box_shape: BoxShape3D = col_node.shape
 	box_shape.size = Vector3(arena_size, 1.0, arena_size)
+	# 影が無い (llvmpipe 対策) ぶん、床のグリッドが唯一の距離の手がかりになる。
+	# BoxMesh の UV は 6 面を 1 枚に詰め込む形でマス目が正しく並ばないので、
+	# 天面にだけ PlaneMesh を 1 枚重ねてグリッドを描く。
+	if DisplayServer.get_name() != "headless":
+		var grid := MeshInstance3D.new()
+		var plane := PlaneMesh.new()
+		plane.size = Vector2(arena_size, arena_size)
+		grid.mesh = plane
+		grid.material_override = WorldView.make_floor_material(arena_size)
+		grid.position = Vector3(0.0, 0.01, 0.0)
+		add_child(grid)
 
 
 ## 落下する縁が見えるように、当たり判定のない視覚的なフチを置く (学習時は不要)
@@ -170,7 +267,7 @@ func _build_edge_rails() -> void:
 	mat.albedo_color = Color(0.95, 0.35, 0.45)
 	mat.emission_enabled = true
 	mat.emission = Color(0.9, 0.2, 0.3)
-	mat.emission_energy_multiplier = 0.8
+	mat.emission_energy_multiplier = 1.6
 	for i in 4:
 		var rail := MeshInstance3D.new()
 		var m := BoxMesh.new()

@@ -1,7 +1,8 @@
-"""Ball Collector 3D を PPO (Stable-Baselines3) で学習させる。
+"""ゲームを PPO (Stable-Baselines3) で学習させる。
 
 例:
-    python tools/train.py --steps 300000 --arenas 16 --parallel 2
+    python tools/train.py --steps 300000                 # Fly By (既定)
+    python tools/train.py --game ball --steps 300000     # Ball Collector
 """
 
 from __future__ import annotations
@@ -15,16 +16,18 @@ from stable_baselines3 import PPO
 from stable_baselines3.common.callbacks import BaseCallback
 from stable_baselines3.common.vec_env import VecMonitor
 
-from godot_launcher import LocalGodotVecEnv
+from godot_launcher import GAMES, LocalGodotVecEnv
 
 MODEL_DIR = Path(__file__).resolve().parent.parent / "models"
+#: ゲームごとの既定の保存先 (拡張子なし)
+MODEL_NAMES = {"flyby": "fly_by", "ball": "ball_collector"}
 
 
 class ProgressReporter(BaseCallback):
     """「AI が上達しているか」を人間が読める形で出す。
 
     報酬は距離シェーピングを含むので直感的でない。そこで Godot の get_info() が
-    返す score (取得したターゲット数) を集計して一緒に表示する。
+    返す score (取得したターゲット数 / くぐったゲート数) を集計して一緒に表示する。
     score はエピソード内で単調増加するため、最大値がそのまま最終スコアになる。
     """
 
@@ -83,6 +86,7 @@ class ProgressReporter(BaseCallback):
 
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--game", choices=GAMES, default="flyby", help="どのゲームを学習するか")
     parser.add_argument("--steps", type=int, default=300_000, help="学習ステップ数")
     parser.add_argument("--arenas", type=int, default=16, help="1 プロセス内のアリーナ数")
     parser.add_argument("--parallel", type=int, default=3, help="Godot プロセス数")
@@ -90,9 +94,11 @@ def main() -> None:
     parser.add_argument("--action-repeat", type=int, default=8)
     parser.add_argument("--port", type=int, default=11008)
     parser.add_argument("--seed", type=int, default=0)
-    parser.add_argument("--out", type=Path, default=MODEL_DIR / "ball_collector")
+    parser.add_argument("--out", type=Path, default=None, help="保存先 (既定はゲーム名から決める)")
     parser.add_argument("--resume", type=Path, default=None, help="学習を再開する .zip")
     args = parser.parse_args()
+    if args.out is None:
+        args.out = MODEL_DIR / MODEL_NAMES[args.game]
 
     env = LocalGodotVecEnv(
         n_parallel=args.parallel,
@@ -102,8 +108,10 @@ def main() -> None:
         speedup=args.speedup,
         action_repeat=args.action_repeat,
         headless=True,
+        game=args.game,
     )
     env = VecMonitor(env)
+    print(f"game = {args.game}")
     print(f"agents = {env.num_envs}  (arenas {args.arenas} x processes {args.parallel})")
     print(f"observation space: {env.observation_space}")
     print(f"action space:      {env.action_space}", flush=True)

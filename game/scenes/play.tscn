@@ -8,3 +8,4 @@ script = ExtResource("1")
 
 [node name="Arena" parent="." instance=ExtResource("2")]
 auto_reset = false
+rival_enabled = true
