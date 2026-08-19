@@ -53,6 +53,8 @@ INK = colors.HexColor("#14161D")
 MUTED = colors.HexColor("#666D7E")
 LINE = colors.HexColor("#D8DBE3")
 PANEL = colors.HexColor("#F3F4F8")
+# 表のヘッダ。紙に刷ったときベタ塗りで汚れないよう白地にする
+HEAD_BG = colors.HexColor("#EEF0F6")
 NAVY = colors.HexColor("#151A2E")
 PINK = colors.HexColor("#F0526B")
 
@@ -108,13 +110,13 @@ def styles() -> dict:
         ),
         "th": ParagraphStyle(
             "th",
-            **{**base, "textColor": colors.white, "fontName": FONT_B},
+            **{**base, "fontName": FONT_B},
             fontSize=8.8,
             leading=14,
         ),
         "thc": ParagraphStyle(
             "thc",
-            **{**base, "textColor": colors.white, "alignment": TA_CENTER, "fontName": FONT_B},
+            **{**base, "alignment": TA_CENTER, "fontName": FONT_B},
             fontSize=8.8,
             leading=14,
         ),
@@ -168,7 +170,9 @@ def table(rows: list[list[str]], widths: list[float], center: list[int] | None =
         data.append(line)
     t = Table(data, colWidths=widths, repeatRows=1)
     style = [
-        ("BACKGROUND", (0, 0), (-1, 0), NAVY),
+        ("BACKGROUND", (0, 0), (-1, 0), HEAD_BG),
+        ("LINEABOVE", (0, 0), (-1, 0), 0.6, LINE),
+        ("LINEBELOW", (0, 0), (-1, 0), 1.1, INK),
         ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
         ("TOPPADDING", (0, 0), (-1, -1), 4.5),
         ("BOTTOMPADDING", (0, 0), (-1, -1), 4.5),

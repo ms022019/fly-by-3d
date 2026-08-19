@@ -58,9 +58,11 @@ def callout(title: str, text: str):
 
 ROOT = Path(__file__).resolve().parent.parent
 OUT = ROOT / "docs" / "FlyBy3D_report_ja.pdf"
-SHOT = ROOT / "docs" / "assets" / "flyby_screenshot.png"
-SHOT_PASS = ROOT / "docs" / "assets" / "flyby_pass.png"
-SHOT_VS = ROOT / "docs" / "assets" / "flyby_vs.png"
+# 画面写真は印刷したときに黒ベタで汚れるので、明るいテーマ (--light) で
+# 撮り直した版を使う。実際のゲームの既定の見た目は暗い。
+SHOT = ROOT / "docs" / "assets" / "flyby_screenshot_light.png"
+SHOT_PASS = ROOT / "docs" / "assets" / "flyby_pass_light.png"
+SHOT_VS = ROOT / "docs" / "assets" / "flyby_vs_light.png"
 
 BLUE = colors.HexColor("#4A7FC1")
 BLUE_D = colors.HexColor("#1D3F73")
@@ -429,8 +431,9 @@ def story() -> list:
         f.append(gap(5))
         f.append(
             p(
-                "黄色いリングが次の目標、青がその先。左上の GATES が得点、SPD が現在の速度。"
-                "この場面では曲がりきるために減速している (10.7 m/s)。",
+                "オレンジのリングが次の目標、青がその先。左上が通過数、SPD が現在の速度。"
+                "本書の画面写真は、紙に刷ったときに黒ベタで汚れないよう"
+                "明るいテーマで撮っている (実際の既定の配色は暗い)。",
                 "caption",
             )
         )
@@ -1077,7 +1080,7 @@ def story() -> list:
         f.append(gap(5))
         f.append(
             p(
-                "実際の対戦画面。青いのが AI (FULL POWER)。2 ゲート、約 4 秒離されている。"
+                "実際の対戦画面。青いのが AI (FULL POWER)。ほぼ横並びで競っている。"
                 "地面のにじみは対地マーカーで、機体からの距離が高度を表す。",
                 "caption",
             )
