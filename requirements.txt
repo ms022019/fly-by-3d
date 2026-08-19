@@ -5,3 +5,6 @@ onnxruntime>=1.17
 pillow
 # torch 2.13 の ONNX エクスポータが依存する
 onnxscript>=0.7
+# 開発レポート (PDF) と記事用の図の生成に使う
+reportlab
+pymupdf
