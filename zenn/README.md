@@ -24,6 +24,17 @@ Zenn の画像アップローダを使いたい場合は、`images/` に同じ P
 zenn-cli を使う場合は、この `zenn/` の中身をそのまま Zenn 用リポジトリの
 ルートに置けば `npx zenn preview` で確認できる (articles/ と images/ の構成に合わせてある)。
 
+## PDF 版
+
+同じ Markdown から PDF も作れる。記事を直したらこれを実行し直せば追従する。
+
+```bash
+python tools/make_article_pdf.py    # -> docs/FlyBy3D_article_ja.pdf
+```
+
+記事中の画像は GitHub Pages の URL を指しているが、PDF では取りに行かず
+`images/` のローカルファイルを使う (ファイル名で対応付けている)。
+
 ## 画像を作り直すとき
 
 図はレポート生成スクリプトの関数をそのまま呼んで書き出している。
