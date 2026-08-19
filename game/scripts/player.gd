@@ -26,6 +26,10 @@ var policy: Policy = null
 ## ライバルの手加減。トルクと速度上限に掛かる (1.0 = 学習したときの全力)。
 var skill := 1.0
 
+## タッチ UI からの入力 (スマートフォン用)。play.gd が毎フレーム書き込む。
+var touch := Vector2.ZERO
+var touch_active := false
+
 var _policy_action := Vector2.ZERO
 var _policy_wait := 0
 
@@ -72,6 +76,9 @@ func _read_input() -> Vector2:
 		v.y += 1.0
 	if Input.is_physical_key_pressed(KEY_W) or Input.is_physical_key_pressed(KEY_UP):
 		v.y -= 1.0
+	if touch_active and touch.length() > v.length():
+		# キーボードとタッチのどちらでも操作できるよう、入力が大きい方を採る
+		v = touch
 	return v.limit_length(1.0)
 
 

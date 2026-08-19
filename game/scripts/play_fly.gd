@@ -98,7 +98,10 @@ func _process(delta: float) -> void:
 			_hold()
 
 	if _touch != null:
-		course.player.touch = _touch.value
+		# 画面基準 (下が正) を機体基準 (上げが正) に直す
+		course.player.touch = Vector3(
+			-_touch.stick.y, _touch.stick.x, -1.0 if _touch.brake else 1.0
+		)
 	_shake = maxf(_shake - delta * 1.6, 0.0)
 	WorldView.follow_chase(_camera, course.player, delta, false, _shake)
 
@@ -432,8 +435,9 @@ func _build_touch_ui() -> void:
 	_hud.add_child(_touch)
 	course.player.touch_active = true
 	_touch_buttons = [
-		_make_touch_button(-210.0, func(): _cycle_level()),
-		_make_touch_button(10.0, func(): _toggle_mode()),
+		_make_touch_button(-320.0, func(): _cycle_level()),
+		_make_touch_button(-100.0, func(): _toggle_mode()),
+		_make_touch_button(120.0, func(): get_tree().change_scene_to_file("res://scenes/play.tscn")),
 	]
 	_refresh_touch_buttons()
 
@@ -475,6 +479,8 @@ func _refresh_touch_buttons() -> void:
 	_touch_buttons[0].visible = not playing and _versus
 	_touch_buttons[1].text = "VS AI" if _versus else "SOLO"
 	_touch_buttons[1].visible = not playing
+	_touch_buttons[2].text = "BALL GAME"
+	_touch_buttons[2].visible = not playing
 
 
 func _make_right_label(font_size: int, text: String, top: float) -> Label:

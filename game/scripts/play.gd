@@ -50,6 +50,9 @@ var _time_bar: ColorRect
 var _dim: ColorRect
 var _you_dot: ColorRect
 var _ai_dot: ColorRect
+## スマートフォン用。タッチ画面のときだけ作られる
+var _touch: TouchUi = null
+var _touch_buttons: Array = []
 
 
 func _ready() -> void:
@@ -70,6 +73,7 @@ func _ready() -> void:
 	arena.target_collected.connect(_on_target_collected)
 	arena.ball_fell.connect(_on_ball_fell)
 
+	_build_touch_ui()
 	_apply_level()
 	_enter_title()
 	WorldView.follow(_camera, arena.player.global_position, 0.0, true)
@@ -86,6 +90,9 @@ func _process(delta: float) -> void:
 		_:
 			arena.hold()
 
+	if _touch != null:
+		# 画面基準そのまま (右が +X、下が +Z) で球の進行方向になる
+		arena.player.touch = _touch.stick
 	_update_pads()
 	_shake = maxf(_shake - delta * 1.6, 0.0)
 	var focus: Vector3 = arena.player.global_position
@@ -106,6 +113,12 @@ func _process(delta: float) -> void:
 
 
 func _unhandled_input(event: InputEvent) -> void:
+	# スマートフォン: 画面をタップして開始する。
+	# 画面下部はボタンの帯なので除外する (ボタンを押しただけで始まってしまうため)
+	if event is InputEventScreenTouch and event.pressed and _phase != Phase.PLAYING:
+		if event.position.y < get_viewport().get_visible_rect().size.y - 200.0:
+			_enter_countdown()
+		return
 	if not (event is InputEventKey and event.pressed and not event.echo):
 		return
 	match event.physical_keycode:
@@ -156,8 +169,12 @@ func _tick_countdown() -> void:
 		_center.text = ""
 		_sub_center.text = ""
 		_hint.text = (
-			"WASD / Arrows : roll      1-4 : AI level"
-			+ "      R : restart      G : other game      Esc : quit"
+			"drag anywhere to roll the ball"
+			if _touch != null
+			else (
+				"WASD / Arrows : roll      1-4 : AI level"
+				+ "      R : restart      G : other game      Esc : quit"
+			)
 		)
 		return
 	_center.text = "%d" % remaining if remaining > 0 else "GO!"
@@ -206,6 +223,7 @@ func _apply_level() -> void:
 
 func _refresh_overlay() -> void:
 	_dim.visible = _phase == Phase.TITLE or _phase == Phase.RESULT
+	_refresh_touch_buttons()
 	match _phase:
 		Phase.TITLE:
 			_center.text = "BALL COLLECTOR 3D"
@@ -213,11 +231,13 @@ func _refresh_overlay() -> void:
 				"YOU  vs  AI\n\n"
 				+ "the AI is a PPO policy trained on this game,\n"
 				+ "now running inside the game itself\n\n"
-				+ "AI level:  %s      (1-4 to change)\n\n"
-				+ "press  SPACE  to start"
+				+ "AI level:  %s\n\n"
+				+ ("tap to start" if _touch != null else "press  SPACE  to start")
 			) % LEVELS[_level]["name"]
 			_hint.text = (
-				"WASD / Arrows : roll      1-4 : AI level      G : other game      Esc : quit"
+				"drag anywhere to roll the ball"
+				if _touch != null
+				else "WASD / Arrows : roll      1-4 : AI level      G : other game      Esc : quit"
 			)
 		Phase.COUNTDOWN:
 			_sub_center.text = ""
@@ -232,10 +252,16 @@ func _refresh_overlay() -> void:
 			_center.text = verdict
 			_sub_center.text = (
 				"\n\n\nYOU  %d      AI  %d\n\nbest %d      record  %d W - %d L\n\n"
-				+ "press  SPACE  to play again      1-4 : AI level"
+				+ (
+					"tap to play again"
+					if _touch != null
+					else "press  SPACE  to play again      1-4 : AI level"
+				)
 			) % [you, ai, _best, _wins, _losses]
 			_hint.text = (
-				"SPACE : play again      1-4 : AI level      G : other game      Esc : quit"
+				"tap to play again"
+				if _touch != null
+				else "SPACE : play again      1-4 : AI level      G : other game      Esc : quit"
 			)
 
 
@@ -356,6 +382,58 @@ func _build_hud() -> void:
 	# 人間の入力と AI の出力を並べて見せる
 	_you_dot = _make_pad(30.0, "YOUR INPUT", Arena.PLAYER_COLOR)
 	_ai_dot = _make_pad(-30.0 - PAD_SIZE, "AI OUTPUT (PPO)", Arena.RIVAL_COLOR)
+
+
+## タッチ画面のときだけ、画面上の操作 UI を作る。
+## キーボードが無い端末では SPACE も 1-4 も G も押せないため。
+func _build_touch_ui() -> void:
+	# --force-touch はデスクトップでスマートフォン用 UI を確認するための開発用
+	var forced := "--force-touch" in OS.get_cmdline_args()
+	if not DisplayServer.is_touchscreen_available() and not forced:
+		return
+	_touch = TouchUi.new()
+	# 球の操作は 2 軸だけなのでブレーキが要らない。画面全体をスティックに使う
+	_touch.use_brake = false
+	_hud.add_child(_touch)
+	arena.player.touch_active = true
+	_touch_buttons = [
+		_make_touch_button(-210.0, func(): _cycle_level()),
+		_make_touch_button(10.0, func(): get_tree().change_scene_to_file("res://scenes/play_fly.tscn")),
+	]
+	_refresh_touch_buttons()
+
+
+func _make_touch_button(offset_x: float, action: Callable) -> Button:
+	var b := Button.new()
+	b.add_theme_font_size_override("font_size", 22)
+	b.anchor_left = 0.5
+	b.anchor_right = 0.5
+	b.anchor_top = 1.0
+	b.anchor_bottom = 1.0
+	b.offset_left = offset_x
+	b.offset_right = offset_x + 200.0
+	b.offset_top = -156.0
+	b.offset_bottom = -88.0
+	b.pressed.connect(action)
+	_hud.add_child(b)
+	return b
+
+
+func _cycle_level() -> void:
+	_level = (_level + 1) % LEVELS.size()
+	_apply_level()
+	_refresh_overlay()
+
+
+## ボタンの文字はレベルに追従させ、プレイ中は隠す (指の邪魔になるため)
+func _refresh_touch_buttons() -> void:
+	if _touch_buttons.is_empty():
+		return
+	var playing := _phase == Phase.PLAYING
+	_touch_buttons[0].text = "AI: %s" % LEVELS[_level]["name"]
+	_touch_buttons[0].visible = not playing
+	_touch_buttons[1].text = "FLY BY"
+	_touch_buttons[1].visible = not playing
 
 
 ## 行動 (X/Z の 2 次元) を表示する小さなパッド。返すのは中の点。
