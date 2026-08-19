@@ -53,6 +53,11 @@ var _ai_dot: ColorRect
 ## スマートフォン用。タッチ画面のときだけ作られる
 var _touch: TouchUi = null
 var _touch_buttons: Array = []
+var _touch_was_active := false
+## この時刻まではタップでの開始を受け付けない (msec)。
+## 操縦していた指を離した拍子に次のレースが始まってしまうため、
+## 結果表示の直後だけ入力を止める。
+var _no_tap_until := 0
 
 
 func _ready() -> void:
@@ -90,8 +95,13 @@ func _process(delta: float) -> void:
 		_:
 			arena.hold()
 
-	if _touch != null:
+	# タッチが後から検知された場合に、案内文とボタンを出し直す
+	if _touch.active != _touch_was_active:
+		_touch_was_active = _touch.active
+		_refresh_overlay()
+	if _touch.active:
 		# 画面基準そのまま (右が +X、下が +Z) で球の進行方向になる
+		arena.player.touch_active = true
 		arena.player.touch = _touch.stick
 	_update_pads()
 	_shake = maxf(_shake - delta * 1.6, 0.0)
@@ -116,6 +126,8 @@ func _unhandled_input(event: InputEvent) -> void:
 	# スマートフォン: 画面をタップして開始する。
 	# 画面下部はボタンの帯なので除外する (ボタンを押しただけで始まってしまうため)
 	if event is InputEventScreenTouch and event.pressed and _phase != Phase.PLAYING:
+		if Time.get_ticks_msec() < _no_tap_until:
+			return
 		if event.position.y < get_viewport().get_visible_rect().size.y - 200.0:
 			_enter_countdown()
 		return
@@ -170,7 +182,7 @@ func _tick_countdown() -> void:
 		_sub_center.text = ""
 		_hint.text = (
 			"drag anywhere to roll the ball"
-			if _touch != null
+			if _touch.active
 			else (
 				"WASD / Arrows : roll      1-4 : AI level"
 				+ "      R : restart      G : other game      Esc : quit"
@@ -199,6 +211,7 @@ func _tick_playing() -> void:
 
 func _on_episode_finished(score: int) -> void:
 	_phase = Phase.RESULT
+	_no_tap_until = Time.get_ticks_msec() + 1200
 	_best = maxi(_best, score)
 	if score > arena.rival_score:
 		_wins += 1
@@ -232,11 +245,11 @@ func _refresh_overlay() -> void:
 				+ "the AI is a PPO policy trained on this game,\n"
 				+ "now running inside the game itself\n\n"
 				+ "AI level:  %s\n\n"
-				+ ("tap to start" if _touch != null else "press  SPACE  to start")
+				+ ("tap to start" if _touch.active else "press  SPACE  to start")
 			) % LEVELS[_level]["name"]
 			_hint.text = (
 				"drag anywhere to roll the ball"
-				if _touch != null
+				if _touch.active
 				else "WASD / Arrows : roll      1-4 : AI level      G : other game      Esc : quit"
 			)
 		Phase.COUNTDOWN:
@@ -254,13 +267,13 @@ func _refresh_overlay() -> void:
 				"\n\n\nYOU  %d      AI  %d\n\nbest %d      record  %d W - %d L\n\n"
 				+ (
 					"tap to play again"
-					if _touch != null
+					if _touch.active
 					else "press  SPACE  to play again      1-4 : AI level"
 				)
 			) % [you, ai, _best, _wins, _losses]
 			_hint.text = (
 				"tap to play again"
-				if _touch != null
+				if _touch.active
 				else "SPACE : play again      1-4 : AI level      G : other game      Esc : quit"
 			)
 
@@ -387,15 +400,17 @@ func _build_hud() -> void:
 ## タッチ画面のときだけ、画面上の操作 UI を作る。
 ## キーボードが無い端末では SPACE も 1-4 も G も押せないため。
 func _build_touch_ui() -> void:
-	# --force-touch はデスクトップでスマートフォン用 UI を確認するための開発用
-	var forced := "--force-touch" in OS.get_cmdline_args()
-	if not DisplayServer.is_touchscreen_available() and not forced:
-		return
 	_touch = TouchUi.new()
+	# 判定が false を返すブラウザがあるので、UI 自体は必ず作っておく。
+	# その場合でも実際にタッチが来た時点で TouchUi 側が active になる。
+	# --force-touch はデスクトップで確認するための開発用。
+	_touch.active = (
+		DisplayServer.is_touchscreen_available()
+		or "--force-touch" in OS.get_cmdline_args()
+	)
 	# 球の操作は 2 軸だけなのでブレーキが要らない。画面全体をスティックに使う
 	_touch.use_brake = false
 	_hud.add_child(_touch)
-	arena.player.touch_active = true
 	_touch_buttons = [
 		_make_touch_button(-210.0, func(): _cycle_level()),
 		_make_touch_button(10.0, func(): get_tree().change_scene_to_file("res://scenes/play_fly.tscn")),
@@ -429,7 +444,7 @@ func _cycle_level() -> void:
 func _refresh_touch_buttons() -> void:
 	if _touch_buttons.is_empty():
 		return
-	var playing := _phase == Phase.PLAYING
+	var playing := _phase == Phase.PLAYING or not _touch.active
 	_touch_buttons[0].text = "AI: %s" % LEVELS[_level]["name"]
 	_touch_buttons[0].visible = not playing
 	_touch_buttons[1].text = "FLY BY"
