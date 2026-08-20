@@ -135,10 +135,16 @@ def parse(md: str) -> list[tuple]:
                 items.append(lines[i].strip()[2:])
                 i += 1
             blocks.append(("ul", items))
+        elif re.match(r"^\d+\.\s", stripped):
+            items = []
+            while i < len(lines) and re.match(r"^\d+\.\s", lines[i].strip()):
+                items.append(re.sub(r"^\d+\.\s+", "", lines[i].strip()))
+                i += 1
+            blocks.append(("ol", items))
         else:
             para: list[str] = []
             while i < len(lines) and lines[i].strip() and not re.match(
-                r"^\s*(#|\||```|!\[|- |---$)", lines[i]
+                r"^\s*(#|\||```|!\[|- |\d+\.\s|---$)", lines[i]
             ):
                 para.append(lines[i].strip())
                 i += 1
@@ -224,12 +230,13 @@ def picture(name: str) -> list:
     return [Spacer(1, 4), Image(str(path), width=draw_w, height=draw_h), Spacer(1, 10)]
 
 
-def bullets(items: list[str]) -> list:
+def listing(items: list[str], marker, indent: float) -> list:
+    """箇条書き・番号付きを、印と本文の 2 列の表で組む。"""
     out = []
-    for item in items:
+    for number, item in enumerate(items, 1):
         row = Table(
-            [[p('<font color="#F0526B">•</font>', "body"), p(inline(item))]],
-            colWidths=[6 * mm, CONTENT_W - 6 * mm],
+            [[p(marker(number), "body"), p(inline(item))]],
+            colWidths=[indent, CONTENT_W - indent],
         )
         row.setStyle(
             TableStyle(
@@ -244,6 +251,14 @@ def bullets(items: list[str]) -> list:
         )
         out.append(row)
     return out
+
+
+def bullets(items: list[str]) -> list:
+    return listing(items, lambda _: '<font color="#F0526B">•</font>', 6 * mm)
+
+
+def numbers(items: list[str]) -> list:
+    return listing(items, lambda n: '<font color="#F0526B"><b>%d.</b></font>' % n, 8 * mm)
 
 
 # --------------------------------------------------------------------------- page
@@ -305,6 +320,9 @@ def story(md: str) -> list:
             f.append(Spacer(1, 7))
         elif kind == "ul":
             f.extend(bullets(value))
+            f.append(Spacer(1, 7))
+        elif kind == "ol":
+            f.extend(numbers(value))
             f.append(Spacer(1, 7))
         elif kind == "table":
             f.append(md_table(value))
